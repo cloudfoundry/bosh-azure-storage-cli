@@ -1,0 +1,21 @@
+---
+resources:
+- name: bosh-azure-storage-cli
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/cloudfoundry/bosh-azure-storage-cli
+    branch: main
+    fetch_tags: true
+
+jobs:
+- name: unit-tests
+  public: true
+  build_logs_to_retain: 100
+  serial: true
+  plan:
+    - in_parallel:
+        - get: bosh-azure-storage-cli
+          trigger: true
+    - task: run-unit-tests
+      file: bosh-azure-storage-cli/ci/tasks/run-unit-tests.yml
