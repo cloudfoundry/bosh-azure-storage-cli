@@ -10,7 +10,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/mvach/bosh-azure-storage-cli/config"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 )
 
 const alphanum = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

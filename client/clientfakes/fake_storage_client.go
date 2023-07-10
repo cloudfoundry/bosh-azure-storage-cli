@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mvach/bosh-azure-storage-cli/client"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/client"
 )
 
 type FakeStorageClient struct {

@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/mvach/bosh-azure-storage-cli/client"
-	"github.com/mvach/bosh-azure-storage-cli/config"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/client"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 	"log"
 	"os"
 	"time"

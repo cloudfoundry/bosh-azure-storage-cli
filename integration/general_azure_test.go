@@ -3,8 +3,8 @@ package integration_test
 import (
 	"os"
 
-	"github.com/mvach/bosh-azure-storage-cli/config"
-	"github.com/mvach/bosh-azure-storage-cli/integration"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/integration"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

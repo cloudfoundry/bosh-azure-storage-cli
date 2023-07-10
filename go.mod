@@ -1,4 +1,4 @@
-module github.com/mvach/bosh-azure-storage-cli
+module github.com/cloudfoundry/bosh-azure-storage-cli
 
 go 1.19
 

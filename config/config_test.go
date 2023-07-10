@@ -3,7 +3,7 @@ package config_test
 import (
 	"bytes"
 	"errors"
-	"github.com/mvach/bosh-azure-storage-cli/config"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

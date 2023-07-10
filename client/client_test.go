@@ -2,8 +2,8 @@ package client_test
 
 import (
 	"errors"
-	"github.com/mvach/bosh-azure-storage-cli/client"
-	"github.com/mvach/bosh-azure-storage-cli/client/clientfakes"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/client"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/client/clientfakes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"os"
