@@ -19,7 +19,7 @@ var largeContent string
 var _ = BeforeSuite(func() {
 	if len(cliPath) == 0 {
 		var err error
-		cliPath, err = gexec.Build("github.com/mvach/bosh-azure-storage-cli")
+		cliPath, err = gexec.Build("github.com/cloudfoundry/bosh-azure-storage-cli")
 		Expect(err).ShouldNot(HaveOccurred())
 	}
 })

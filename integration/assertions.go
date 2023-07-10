@@ -2,7 +2,7 @@ package integration
 
 import (
 	"bytes"
-	"github.com/mvach/bosh-azure-storage-cli/config"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 	. "github.com/onsi/gomega"
 	"os"
 )
