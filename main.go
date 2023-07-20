@@ -10,10 +10,18 @@ import (
 	"time"
 )
 
+var version string
+
 func main() {
 
 	configPath := flag.String("c", "", "configuration path")
+	showVer := flag.Bool("v", false, "version")
 	flag.Parse()
+
+	if *showVer {
+		fmt.Printf("version %s\n", version)
+		os.Exit(0)
+	}
 
 	configFile, err := os.Open(*configPath)
 	if err != nil {
@@ -81,7 +89,6 @@ func main() {
 		}
 
 		err = blobstoreClient.Delete(nonFlagArgs[1])
-
 
 	case "exists":
 		if len(nonFlagArgs) != 2 {

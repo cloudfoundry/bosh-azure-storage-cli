@@ -68,6 +68,18 @@ func AssertOnPutFailures(cliPath string, cfg *config.AZStorageConfig, errorMessa
 	Expect(consoleOutput).To(ContainSubstring(errorMessage))
 }
 
+func AssertOnCliVersion(cliPath string, cfg *config.AZStorageConfig) {
+	configPath := MakeConfigFile(cfg)
+	defer func() { _ = os.Remove(configPath) }()
+
+	cliSession, err := RunCli(cliPath, configPath, "-v")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(Equal(0))
+
+	consoleOutput := bytes.NewBuffer(cliSession.Out.Contents()).String()
+	Expect(consoleOutput).To(ContainSubstring("version"))
+}
+
 func AssertGetNonexistentFails(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
 	defer func() { _ = os.Remove(configPath) }()
