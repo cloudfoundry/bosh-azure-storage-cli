@@ -17,7 +17,6 @@ var _ = Describe("General testing for all Azure regions", func() {
 
 	containerName := os.Getenv("CONTAINER_NAME")
 
-
 	BeforeEach(func() {
 		Expect(accountName).ToNot(BeEmpty(), "ACCOUNT_NAME must be set")
 		Expect(accountKey).ToNot(BeEmpty(), "ACCOUNT_KEY must be set")
@@ -56,6 +55,16 @@ var _ = Describe("General testing for all Azure regions", func() {
 			}
 			msg := "upload failure"
 			integration.AssertOnPutFailures(cliPath, cfg, msg)
+		})
+	})
+	Describe("Invoking `-v`", func() {
+		It("returns the cli version", func() {
+			cfg := &config.AZStorageConfig{
+				AccountName:   accountName,
+				AccountKey:    accountKey,
+				ContainerName: containerName,
+			}
+			integration.AssertOnCliVersion(cliPath, cfg)
 		})
 	})
 })
