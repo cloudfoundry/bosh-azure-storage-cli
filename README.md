@@ -9,9 +9,9 @@ Given a JSON config file (`config.json`)...
 
 ``` json
 {
-  "account-name":           "<string> (required)",
-  "account-key":            "<string> (required)",
-  "container-name":         "<string> (required)"
+  "account_name":           "<string> (required)",
+  "account_key":            "<string> (required)",
+  "container_name":         "<string> (required)"
 }
 ```
 

@@ -11,9 +11,9 @@ import (
 var _ = Describe("Config", func() {
 
 	It("contains account-name and account-name", func() {
-		configJson := []byte(`{"account-name": "foo-account-name", 
-								"account-key": "bar-account-key", 
-								"container-name": "baz-container-name"}`)
+		configJson := []byte(`{"account_name": "foo-account-name",
+								"account_key": "bar-account-key",
+								"container_name": "baz-container-name"}`)
 		configReader := bytes.NewReader(configJson)
 
 		config, err := config.NewFromReader(configReader)
