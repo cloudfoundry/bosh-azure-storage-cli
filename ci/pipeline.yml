@@ -8,6 +8,8 @@ jobs:
     - in_parallel:
         - get: bosh-azure-storage-cli
           trigger: true
+        - get: azure-storage-cli-docker-image
+          trigger: true
     - task: run-unit-tests
       file: bosh-azure-storage-cli/ci/tasks/run-unit-tests.yml
 
@@ -19,6 +21,8 @@ jobs:
       passed:
       - unit-tests
     - get: azure-storage-cli-docker-image
+      trigger: true
+      passed: [unit-tests]
     - put: version-semver
       params:
         bump: patch
@@ -50,6 +54,7 @@ jobs:
 - name: build-azure-storage-cli-docker-image
   plan:
   - get: bosh-azure-storage-cli
+    resource: bosh-azure-storage-cli-for-docker-image-creation
     trigger: true
   - get: bosh-golang-release-image
     trigger: true
@@ -87,6 +92,14 @@ resources:
     uri: git@github.com:cloudfoundry/bosh-azure-storage-cli.git
     branch: main
     private_key: ((github_deploy_key_bosh-azure-storage-cli.private_key))
+
+- name: bosh-azure-storage-cli-for-docker-image-creation
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/bosh-azure-storage-cli.git
+    branch: main
+    private_key: ((github_deploy_key_bosh-azure-storage-cli.private_key))
+    paths: ["ci/docker/*"]
 
 - name: golang-release
   type: git
