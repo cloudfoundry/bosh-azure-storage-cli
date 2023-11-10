@@ -50,24 +50,6 @@ func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 	Expect(cliSession.Err.Contents()).To(MatchRegexp("File '.*' does not exist in bucket '.*'"))
 }
 
-func AssertOnPutFailures(cliPath string, cfg *config.AZStorageConfig, errorMessage string) {
-	expectedString := GenerateRandomString()
-	blobName := GenerateRandomString()
-
-	configPath := MakeConfigFile(cfg)
-	defer func() { _ = os.Remove(configPath) }()
-
-	contentFile := MakeContentFile(expectedString)
-	defer func() { _ = os.Remove(contentFile) }()
-
-	cliSession, err := RunCli(cliPath, configPath, "put", contentFile, blobName)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cliSession.ExitCode()).To(Equal(1))
-
-	consoleOutput := bytes.NewBuffer(cliSession.Err.Contents()).String()
-	Expect(consoleOutput).To(ContainSubstring(errorMessage))
-}
-
 func AssertOnCliVersion(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
 	defer func() { _ = os.Remove(configPath) }()

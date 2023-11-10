@@ -55,17 +55,15 @@ func main() {
 		if len(nonFlagArgs) != 3 {
 			log.Fatalf("Put method expected 3 arguments got %d\n", len(nonFlagArgs))
 		}
-		src, dst := nonFlagArgs[1], nonFlagArgs[2]
+		sourceFilePath, dst := nonFlagArgs[1], nonFlagArgs[2]
 
-		var sourceFile *os.File
-		sourceFile, err = os.Open(src)
+		_, err := os.Stat(sourceFilePath)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		defer sourceFile.Close()
-
-		err = blobstoreClient.Put(sourceFile, dst)
+		err = blobstoreClient.Put(sourceFilePath, dst)
+		fatalLog(cmd, err)
 
 	case "get":
 		if len(nonFlagArgs) != 3 {
@@ -82,6 +80,7 @@ func main() {
 		defer dstFile.Close()
 
 		err = blobstoreClient.Get(src, dstFile)
+		fatalLog(cmd, err)
 
 	case "delete":
 		if len(nonFlagArgs) != 2 {
@@ -89,6 +88,7 @@ func main() {
 		}
 
 		err = blobstoreClient.Delete(nonFlagArgs[1])
+		fatalLog(cmd, err)
 
 	case "exists":
 		if len(nonFlagArgs) != 2 {
@@ -124,7 +124,6 @@ func main() {
 
 		if err != nil {
 			log.Fatalf("Failed to sign request: %s", err)
-			os.Exit(1)
 		}
 
 		fmt.Println(signedURL)
@@ -133,8 +132,11 @@ func main() {
 	default:
 		log.Fatalf("unknown command: '%s'\n", cmd)
 	}
+}
 
+func fatalLog(cmd string, err error) {
 	if err != nil {
 		log.Fatalf("performing operation %s: %s\n", cmd, err)
 	}
 }
+

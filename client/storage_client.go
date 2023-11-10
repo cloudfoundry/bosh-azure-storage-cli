@@ -21,7 +21,7 @@ type StorageClient interface {
 	Upload(
 		source io.ReadSeekCloser,
 		dest string,
-	) error
+	) ([]byte, error)
 
 	Download(
 		source string,
@@ -62,23 +62,17 @@ func NewStorageClient(storageConfig config.AZStorageConfig) (StorageClient, erro
 func (dsc DefaultStorageClient) Upload(
 	source io.ReadSeekCloser,
 	dest string,
-) error {
-
+) ([]byte, error) {
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
 	log.Println(fmt.Sprintf("Uploading %s", blobURL))
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = client.Upload(context.Background(), source, nil)
-	if err != nil {
-		return fmt.Errorf("upload failure: %s", err.Error())
-	}
-
-	log.Println("Successfully uploaded file")
-	return nil
+	uploadResponse, err := client.Upload(context.Background(), source, nil)
+	return uploadResponse.ContentMD5, err
 }
 
 func (dsc DefaultStorageClient) Download(
