@@ -94,7 +94,15 @@ func (dsc DefaultStorageClient) Download(
 		return err
 	}
 
-	_, err = client.DownloadFile(context.Background(), dest, nil)
+	blobSize, err := client.DownloadFile(context.Background(), dest, nil)
+	info, err := dest.Stat()
+	if err != nil {
+		return err
+	}
+	if blobSize != info.Size() {
+		log.Printf("Truncating file according to the blob size %v", blobSize)
+		dest.Truncate(blobSize)
+	}
 
 	return err
 }
