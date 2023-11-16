@@ -61,17 +61,19 @@ type FakeStorageClient struct {
 		result1 string
 		result2 error
 	}
-	UploadStub        func(io.ReadSeekCloser, string) error
+	UploadStub        func(io.ReadSeekCloser, string) ([]byte, error)
 	uploadMutex       sync.RWMutex
 	uploadArgsForCall []struct {
 		arg1 io.ReadSeekCloser
 		arg2 string
 	}
 	uploadReturns struct {
-		result1 error
+		result1 []byte
+		result2 error
 	}
 	uploadReturnsOnCall map[int]struct {
-		result1 error
+		result1 []byte
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -329,7 +331,7 @@ func (fake *FakeStorageClient) SignedUrlReturnsOnCall(i int, result1 string, res
 	}{result1, result2}
 }
 
-func (fake *FakeStorageClient) Upload(arg1 io.ReadSeekCloser, arg2 string) error {
+func (fake *FakeStorageClient) Upload(arg1 io.ReadSeekCloser, arg2 string) ([]byte, error) {
 	fake.uploadMutex.Lock()
 	ret, specificReturn := fake.uploadReturnsOnCall[len(fake.uploadArgsForCall)]
 	fake.uploadArgsForCall = append(fake.uploadArgsForCall, struct {
@@ -344,9 +346,9 @@ func (fake *FakeStorageClient) Upload(arg1 io.ReadSeekCloser, arg2 string) error
 		return stub(arg1, arg2)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeStorageClient) UploadCallCount() int {
@@ -355,7 +357,7 @@ func (fake *FakeStorageClient) UploadCallCount() int {
 	return len(fake.uploadArgsForCall)
 }
 
-func (fake *FakeStorageClient) UploadCalls(stub func(io.ReadSeekCloser, string) error) {
+func (fake *FakeStorageClient) UploadCalls(stub func(io.ReadSeekCloser, string) ([]byte, error)) {
 	fake.uploadMutex.Lock()
 	defer fake.uploadMutex.Unlock()
 	fake.UploadStub = stub
@@ -368,27 +370,30 @@ func (fake *FakeStorageClient) UploadArgsForCall(i int) (io.ReadSeekCloser, stri
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStorageClient) UploadReturns(result1 error) {
+func (fake *FakeStorageClient) UploadReturns(result1 []byte, result2 error) {
 	fake.uploadMutex.Lock()
 	defer fake.uploadMutex.Unlock()
 	fake.UploadStub = nil
 	fake.uploadReturns = struct {
-		result1 error
-	}{result1}
+		result1 []byte
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeStorageClient) UploadReturnsOnCall(i int, result1 error) {
+func (fake *FakeStorageClient) UploadReturnsOnCall(i int, result1 []byte, result2 error) {
 	fake.uploadMutex.Lock()
 	defer fake.uploadMutex.Unlock()
 	fake.UploadStub = nil
 	if fake.uploadReturnsOnCall == nil {
 		fake.uploadReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 []byte
+			result2 error
 		})
 	}
 	fake.uploadReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 []byte
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeStorageClient) Invocations() map[string][][]interface{} {
