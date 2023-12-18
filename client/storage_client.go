@@ -37,6 +37,7 @@ type StorageClient interface {
 	) (bool, error)
 
 	SignedUrl(
+		requestType string,
 		dest string,
 		expiration time.Duration,
 	) (string, error)
@@ -152,6 +153,7 @@ func (dsc DefaultStorageClient) Exists(
 }
 
 func (dsc DefaultStorageClient) SignedUrl(
+	requestType string,
 	dest string,
 	expiration time.Duration,
 ) (string, error) {
@@ -167,6 +169,10 @@ func (dsc DefaultStorageClient) SignedUrl(
 	url, err := client.GetSASURL(sas.BlobPermissions{Read: true, Create: true}, time.Now().Add(expiration), nil)
 	if err != nil {
 		return "", err
+	}
+
+	if requestType == "GET" {
+		url = url + "&timeout=1800"
 	}
 
 	return url, err
