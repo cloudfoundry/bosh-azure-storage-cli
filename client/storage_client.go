@@ -171,8 +171,12 @@ func (dsc DefaultStorageClient) SignedUrl(
 		return "", err
 	}
 
+	// There could be occasional issues with the Azure Storage Account when requests hitting
+	// the server are not responded to, and then BOSH hangs while expecting a reply from the server.
+	// That's why we implement a server-side timeout here
+	// (see: https://learn.microsoft.com/en-us/rest/api/storageservices/setting-timeouts-for-blob-service-operations)
 	if requestType == "GET" {
-		url = url + "&timeout=1800"
+		url += "&timeout=1800"
 	}
 
 	return url, err
