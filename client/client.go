@@ -71,7 +71,7 @@ func (client *AzBlobstore) Sign(dest string, action string, expiration time.Dura
 	action = strings.ToUpper(action)
 	switch action {
 	case "GET", "PUT":
-		return client.storageClient.SignedUrl(dest, expiration)
+		return client.storageClient.SignedUrl(action, dest, expiration)
 	default:
 		return "", fmt.Errorf("action not implemented: %s", action)
 	}

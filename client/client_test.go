@@ -146,7 +146,8 @@ var _ = Describe("Client", func() {
 			Expect(url == "https://the-signed-url").To(BeTrue())
 			Expect(err).ToNot(HaveOccurred())
 
-			dest, expiration := storageClient.SignedUrlArgsForCall(0)
+			action, dest, expiration := storageClient.SignedUrlArgsForCall(0)
+			Expect(action).To(Equal("GET"))
 			Expect(dest).To(Equal("blob"))
 			Expect(int(expiration)).To(Equal(100))
 		})

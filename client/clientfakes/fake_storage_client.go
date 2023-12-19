@@ -47,11 +47,12 @@ type FakeStorageClient struct {
 		result1 bool
 		result2 error
 	}
-	SignedUrlStub        func(string, time.Duration) (string, error)
+	SignedUrlStub        func(string, string, time.Duration) (string, error)
 	signedUrlMutex       sync.RWMutex
 	signedUrlArgsForCall []struct {
 		arg1 string
-		arg2 time.Duration
+		arg2 string
+		arg3 time.Duration
 	}
 	signedUrlReturns struct {
 		result1 string
@@ -266,19 +267,20 @@ func (fake *FakeStorageClient) ExistsReturnsOnCall(i int, result1 bool, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeStorageClient) SignedUrl(arg1 string, arg2 time.Duration) (string, error) {
+func (fake *FakeStorageClient) SignedUrl(arg1 string, arg2 string, arg3 time.Duration) (string, error) {
 	fake.signedUrlMutex.Lock()
 	ret, specificReturn := fake.signedUrlReturnsOnCall[len(fake.signedUrlArgsForCall)]
 	fake.signedUrlArgsForCall = append(fake.signedUrlArgsForCall, struct {
 		arg1 string
-		arg2 time.Duration
-	}{arg1, arg2})
+		arg2 string
+		arg3 time.Duration
+	}{arg1, arg2, arg3})
 	stub := fake.SignedUrlStub
 	fakeReturns := fake.signedUrlReturns
-	fake.recordInvocation("SignedUrl", []interface{}{arg1, arg2})
+	fake.recordInvocation("SignedUrl", []interface{}{arg1, arg2, arg3})
 	fake.signedUrlMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -292,17 +294,17 @@ func (fake *FakeStorageClient) SignedUrlCallCount() int {
 	return len(fake.signedUrlArgsForCall)
 }
 
-func (fake *FakeStorageClient) SignedUrlCalls(stub func(string, time.Duration) (string, error)) {
+func (fake *FakeStorageClient) SignedUrlCalls(stub func(string, string, time.Duration) (string, error)) {
 	fake.signedUrlMutex.Lock()
 	defer fake.signedUrlMutex.Unlock()
 	fake.SignedUrlStub = stub
 }
 
-func (fake *FakeStorageClient) SignedUrlArgsForCall(i int) (string, time.Duration) {
+func (fake *FakeStorageClient) SignedUrlArgsForCall(i int) (string, string, time.Duration) {
 	fake.signedUrlMutex.RLock()
 	defer fake.signedUrlMutex.RUnlock()
 	argsForCall := fake.signedUrlArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStorageClient) SignedUrlReturns(result1 string, result2 error) {
