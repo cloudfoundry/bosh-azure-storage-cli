@@ -126,7 +126,7 @@ func main() {
 			log.Fatalf("Failed to sign request: %s", err)
 		}
 
-		fmt.Println(signedURL)
+		fmt.Print(signedURL)
 		os.Exit(0)
 
 	default:
