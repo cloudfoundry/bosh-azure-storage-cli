@@ -84,7 +84,7 @@ func AssertOnSignedURLs(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
 	defer func() { _ = os.Remove(configPath) }()
 
-	regex := "https://"+cfg.AccountName+".blob.core.windows.net/" +cfg.ContainerName +"/some-blob.*"
+	regex := "https://" + cfg.AccountName + ".blob.*/" + cfg.ContainerName + "/some-blob.*"
 
 	cliSession, err := RunCli(cliPath, configPath, "sign", "some-blob", "get", "60s")
 	Expect(err).ToNot(HaveOccurred())

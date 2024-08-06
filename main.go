@@ -139,4 +139,3 @@ func fatalLog(cmd string, err error) {
 		log.Fatalf("performing operation %s: %s\n", cmd, err)
 	}
 }
-

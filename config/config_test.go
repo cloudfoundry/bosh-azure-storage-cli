@@ -22,6 +22,8 @@ var _ = Describe("Config", func() {
 		Expect(config.AccountName).To(Equal("foo-account-name"))
 		Expect(config.AccountKey).To(Equal("bar-account-key"))
 		Expect(config.ContainerName).To(Equal("baz-container-name"))
+		Expect(config.Environment).To(Equal("AzureCloud"))
+		Expect(config.StorageEndpoint()).To(Equal("blob.core.windows.net"))
 	})
 
 	It("is empty if config cannot be parsed", func() {
@@ -44,6 +46,45 @@ var _ = Describe("Config", func() {
 		})
 	})
 
+	Context("environment", func() {
+		When("environment is invalid", func() {
+			It("returns an error", func() {
+				configJson := []byte(`{"environment": "invalid-cloud"}`)
+				configReader := bytes.NewReader(configJson)
+
+				config, err := config.NewFromReader(configReader)
+
+				Expect(err.Error()).To(Equal("unknown cloud environment: invalid-cloud"))
+				Expect(config.Environment).Should(BeEmpty())
+			})
+		})
+
+		When("environment is AzureChinaCloud", func() {
+			It("sets the endpoint for china", func() {
+				configJson := []byte(`{"environment": "AzureChinaCloud"}`)
+				configReader := bytes.NewReader(configJson)
+
+				config, err := config.NewFromReader(configReader)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(config.Environment).To(Equal("AzureChinaCloud"))
+				Expect(config.StorageEndpoint()).To(Equal("blob.core.chinacloudapi.cn"))
+			})
+		})
+
+		When("environment is AzureUSGovernment", func() {
+			It("sets the endpoint for usgovernment", func() {
+				configJson := []byte(`{"environment": "AzureUSGovernment"}`)
+				configReader := bytes.NewReader(configJson)
+
+				config, err := config.NewFromReader(configReader)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(config.Environment).To(Equal("AzureUSGovernment"))
+				Expect(config.StorageEndpoint()).To(Equal("blob.core.usgovcloudapi.net"))
+			})
+		})
+	})
 })
 
 type explodingReader struct{}
