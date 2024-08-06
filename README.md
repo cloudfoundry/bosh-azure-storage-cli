@@ -11,7 +11,8 @@ Given a JSON config file (`config.json`)...
 {
   "account_name":           "<string> (required)",
   "account_key":            "<string> (required)",
-  "container_name":         "<string> (required)"
+  "container_name":         "<string> (required)",
+  "environment":            "<string> (optional, default: 'AzureCloud')",
 }
 ```
 

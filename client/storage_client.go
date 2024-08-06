@@ -3,8 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	azBlob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"io"
 	"log"
 	"os"
@@ -12,7 +10,9 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	azBlob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 )
 
@@ -55,7 +55,7 @@ func NewStorageClient(storageConfig config.AZStorageConfig) (StorageClient, erro
 		return nil, err
 	}
 
-	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", storageConfig.AccountName, storageConfig.ContainerName)
+	serviceURL := fmt.Sprintf("https://%s.%s/%s", storageConfig.AccountName, storageConfig.StorageEndpoint(), storageConfig.ContainerName)
 
 	return DefaultStorageClient{credential: credential, serviceURL: serviceURL, storageConfig: storageConfig}, nil
 }
@@ -178,8 +178,8 @@ func (dsc DefaultStorageClient) SignedUrl(
 	if requestType == "GET" {
 		url += "&timeout=1800"
 	} else {
-        url += "&timeout=2700"
-    }
+		url += "&timeout=2700"
+	}
 
 	return url, err
 }
