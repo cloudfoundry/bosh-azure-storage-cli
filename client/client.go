@@ -20,7 +20,7 @@ func New(storageClient StorageClient) (AzBlobstore, error) {
 }
 
 func (client *AzBlobstore) Put(sourceFilePath string, dest string) error {
-	sourceMD5, err:= client.getMD5(sourceFilePath)
+	sourceMD5, err := client.getMD5(sourceFilePath)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,6 @@ func (client *AzBlobstore) Sign(dest string, action string, expiration time.Dura
 	}
 }
 
-
 func (client *AzBlobstore) getMD5(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -85,7 +84,6 @@ func (client *AzBlobstore) getMD5(filePath string) ([]byte, error) {
 	}
 
 	defer file.Close()
-
 
 	hash := md5.New()
 	_, err = io.Copy(hash, file)

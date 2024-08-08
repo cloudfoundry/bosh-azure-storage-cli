@@ -11,7 +11,8 @@ Given a JSON config file (`config.json`)...
 {
   "account_name":           "<string> (required)",
   "account_key":            "<string> (required)",
-  "container_name":         "<string> (required)"
+  "container_name":         "<string> (required)",
+  "environment":            "<string> (optional, default: 'AzureCloud')",
 }
 ```
 
@@ -39,6 +40,7 @@ Given a JSON config file (`config.json`)...
 ```
 
 ### Using signed urls with curl
+
 ``` bash
 # Uploading a blob:
 curl -X PUT -H "x-ms-blob-type: blockblob" -F 'fileX=<path/to/file>' <signed url>
@@ -47,13 +49,35 @@ curl -X PUT -H "x-ms-blob-type: blockblob" -F 'fileX=<path/to/file>' <signed url
 curl -X GET <signed url>
 ```
 
-## Running integration tests
+## Running tests
 
-To run the integration tests:
-- Export the following variables into your environment:
-  ``` bash
-  export ACCOUNT_NAME=<your Azure accounnt name>
-  export ACCOUNT_KEY=<your Azure account key>
-  export CONTAINER_NAME=<the target container name>
-  ```
-- go test ./integration/...
+### Unit tests
+
+Using ginkgo:
+
+``` bash
+go install github.com/onsi/ginkgo/v2/ginkgo
+ginkgo --skip-package=integration --randomize-all --cover -v -r
+```
+
+Using go test:
+
+``` bash
+go test $(go list ./... | grep -v integration)
+```
+
+### Integration tests
+
+1. Export the following variables into your environment:
+
+    ``` bash
+    export ACCOUNT_NAME=<your Azure accounnt name>
+    export ACCOUNT_KEY=<your Azure account key>
+    export CONTAINER_NAME=<the target container name>
+    ```
+
+2. Run integration tests
+
+    ```bash
+    go test ./integration/...
+    ```
