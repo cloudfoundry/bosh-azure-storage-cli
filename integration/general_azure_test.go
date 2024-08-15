@@ -12,15 +12,26 @@ import (
 )
 
 var _ = Describe("General testing for all Azure regions", func() {
+	var defaultConfig config.AZStorageConfig
 
 	BeforeEach(func() {
-		Expect(os.Getenv("ACCOUNT_NAME")).ToNot(BeEmpty(), "ACCOUNT_NAME must be set")
-		Expect(os.Getenv("ACCOUNT_KEY")).ToNot(BeEmpty(), "ACCOUNT_KEY must be set")
-		Expect(os.Getenv("CONTAINER_NAME")).ToNot(BeEmpty(), "CONTAINER_NAME must be set")
+		defaultConfig = config.AZStorageConfig{
+			AccountName:   os.Getenv("ACCOUNT_NAME"),
+			AccountKey:    os.Getenv("ACCOUNT_KEY"),
+			ContainerName: os.Getenv("CONTAINER_NAME"),
+			Environment:   os.Getenv("ENVIRONMENT"),
+		}
+		if defaultConfig.Environment == "" {
+			defaultConfig.Environment = "AzureCloud"
+		}
+
+		Expect(defaultConfig.AccountName).ToNot(BeEmpty(), "ACCOUNT_NAME must be set")
+		Expect(defaultConfig.AccountKey).ToNot(BeEmpty(), "ACCOUNT_KEY must be set")
+		Expect(defaultConfig.ContainerName).ToNot(BeEmpty(), "CONTAINER_NAME must be set")
 	})
 
 	configurations := []TableEntry{
-		Entry("with default config", defaultConfig()),
+		Entry("with default config", &defaultConfig),
 	}
 	DescribeTable("Blobstore lifecycle works",
 		func(cfg *config.AZStorageConfig) { integration.AssertLifecycleWorks(cliPath, cfg) },
@@ -45,7 +56,7 @@ var _ = Describe("General testing for all Azure regions", func() {
 
 		BeforeEach(func() {
 			blobName = integration.GenerateRandomString()
-			configPath = integration.MakeConfigFile(defaultConfig())
+			configPath = integration.MakeConfigFile(&defaultConfig)
 			contentFile = integration.MakeContentFile("foo")
 		})
 
@@ -68,7 +79,7 @@ var _ = Describe("General testing for all Azure regions", func() {
 			cliSession, err = integration.RunCli(cliPath, configPath, "exists", blobName)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cliSession.ExitCode()).To(BeZero())
-			Expect(string(cliSession.Err.Contents())).To(MatchRegexp("File '" + blobName + "' exists in bucket 'test-container'"))
+			Expect(string(cliSession.Err.Contents())).To(MatchRegexp("File '" + blobName + "' exists in bucket '" + defaultConfig.ContainerName + "'"))
 		})
 
 		It("overwrites an existing file", func() {
@@ -126,16 +137,7 @@ var _ = Describe("General testing for all Azure regions", func() {
 	})
 	Describe("Invoking `-v`", func() {
 		It("returns the cli version", func() {
-			integration.AssertOnCliVersion(cliPath, defaultConfig())
+			integration.AssertOnCliVersion(cliPath, &defaultConfig)
 		})
 	})
 })
-
-func defaultConfig() *config.AZStorageConfig {
-
-	return &config.AZStorageConfig{
-		AccountName:   os.Getenv("ACCOUNT_NAME"),
-		AccountKey:    os.Getenv("ACCOUNT_KEY"),
-		ContainerName: os.Getenv("CONTAINER_NAME"),
-	}
-}
