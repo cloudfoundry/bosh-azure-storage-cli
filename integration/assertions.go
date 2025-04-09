@@ -2,9 +2,11 @@ package integration
 
 import (
 	"bytes"
-	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
-	. "github.com/onsi/gomega"
 	"os"
+
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
+
+	. "github.com/onsi/gomega" //nolint:staticcheck
 )
 
 func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
@@ -12,10 +14,10 @@ func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 	blobName := GenerateRandomString()
 
 	configPath := MakeConfigFile(cfg)
-	defer func() { _ = os.Remove(configPath) }()
+	defer os.Remove(configPath) //nolint:errcheck
 
 	contentFile := MakeContentFile(expectedString)
-	defer func() { _ = os.Remove(contentFile) }()
+	defer os.Remove(contentFile) //nolint:errcheck
 
 	cliSession, err := RunCli(cliPath, configPath, "put", contentFile, blobName)
 	Expect(err).ToNot(HaveOccurred())
@@ -30,7 +32,7 @@ func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 	Expect(err).ToNot(HaveOccurred())
 	err = tmpLocalFile.Close()
 	Expect(err).ToNot(HaveOccurred())
-	defer func() { _ = os.Remove(tmpLocalFile.Name()) }()
+	defer os.Remove(tmpLocalFile.Name()) //nolint:errcheck
 
 	cliSession, err = RunCli(cliPath, configPath, "get", blobName, tmpLocalFile.Name())
 	Expect(err).ToNot(HaveOccurred())
@@ -52,7 +54,7 @@ func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 
 func AssertOnCliVersion(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
-	defer func() { _ = os.Remove(configPath) }()
+	defer os.Remove(configPath) //nolint:errcheck
 
 	cliSession, err := RunCli(cliPath, configPath, "-v")
 	Expect(err).ToNot(HaveOccurred())
@@ -64,7 +66,7 @@ func AssertOnCliVersion(cliPath string, cfg *config.AZStorageConfig) {
 
 func AssertGetNonexistentFails(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
-	defer func() { _ = os.Remove(configPath) }()
+	defer os.Remove(configPath) //nolint:errcheck
 
 	cliSession, err := RunCli(cliPath, configPath, "get", "non-existent-file", "/dev/null")
 	Expect(err).ToNot(HaveOccurred())
@@ -73,7 +75,7 @@ func AssertGetNonexistentFails(cliPath string, cfg *config.AZStorageConfig) {
 
 func AssertDeleteNonexistentWorks(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
-	defer func() { _ = os.Remove(configPath) }()
+	defer os.Remove(configPath) //nolint:errcheck
 
 	cliSession, err := RunCli(cliPath, configPath, "delete", "non-existent-file")
 	Expect(err).ToNot(HaveOccurred())
@@ -82,7 +84,7 @@ func AssertDeleteNonexistentWorks(cliPath string, cfg *config.AZStorageConfig) {
 
 func AssertOnSignedURLs(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
-	defer func() { _ = os.Remove(configPath) }()
+	defer os.Remove(configPath) //nolint:errcheck
 
 	regex := "https://" + cfg.AccountName + ".blob.*/" + cfg.ContainerName + "/some-blob.*"
 
