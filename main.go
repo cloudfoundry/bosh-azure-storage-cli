@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/cloudfoundry/bosh-azure-storage-cli/client"
-	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 	"log"
 	"os"
 	"time"
+
+	"github.com/cloudfoundry/bosh-azure-storage-cli/client"
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 )
 
 var version string
@@ -77,7 +78,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		defer dstFile.Close()
+		defer dstFile.Close() //nolint:errcheck
 
 		err = blobstoreClient.Get(src, dstFile)
 		fatalLog(cmd, err)
