@@ -2,13 +2,14 @@ package integration
 
 import (
 	"encoding/json"
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	"math/rand"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 
 	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 )

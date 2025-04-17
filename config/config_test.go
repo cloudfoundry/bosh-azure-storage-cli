@@ -3,9 +3,11 @@ package config_test
 import (
 	"bytes"
 	"errors"
-	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 )
 
 var _ = Describe("Config", func() {

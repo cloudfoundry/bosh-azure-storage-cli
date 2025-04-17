@@ -61,8 +61,8 @@ var _ = Describe("General testing for all Azure regions", func() {
 		})
 
 		AfterEach(func() {
-			defer func() { _ = os.Remove(configPath) }()
-			defer func() { _ = os.Remove(contentFile) }()
+			os.Remove(configPath)  //nolint:errcheck
+			os.Remove(contentFile) //nolint:errcheck
 		})
 
 		It("uploads a file", func() {
@@ -89,9 +89,9 @@ var _ = Describe("General testing for all Azure regions", func() {
 				Expect(cliSession.ExitCode()).To(BeZero())
 			}()
 
-			tmpLocalFile, _ := os.CreateTemp("", "azure-storage-cli-download")
-			tmpLocalFile.Close()
-			defer func() { _ = os.Remove(tmpLocalFile.Name()) }()
+			tmpLocalFile, _ := os.CreateTemp("", "azure-storage-cli-download") //nolint:errcheck
+			tmpLocalFile.Close()                                               //nolint:errcheck
+			os.Remove(tmpLocalFile.Name())                                     //nolint:errcheck
 
 			contentFile = integration.MakeContentFile("initial content")
 			cliSession, err := integration.RunCli(cliPath, configPath, "put", contentFile, blobName)
@@ -102,7 +102,7 @@ var _ = Describe("General testing for all Azure regions", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cliSession.ExitCode()).To(BeZero())
 
-			gottenBytes, _ := os.ReadFile(tmpLocalFile.Name())
+			gottenBytes, _ := os.ReadFile(tmpLocalFile.Name()) //nolint:errcheck
 			Expect(string(gottenBytes)).To(Equal("initial content"))
 
 			contentFile = integration.MakeContentFile("updated content")
@@ -114,7 +114,7 @@ var _ = Describe("General testing for all Azure regions", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cliSession.ExitCode()).To(BeZero())
 
-			gottenBytes, _ = os.ReadFile(tmpLocalFile.Name())
+			gottenBytes, _ = os.ReadFile(tmpLocalFile.Name()) //nolint:errcheck
 			Expect(string(gottenBytes)).To(Equal("updated content"))
 		})
 

@@ -1,8 +1,9 @@
 package integration_test
 
 import (
-	"github.com/onsi/gomega/gexec"
 	"testing"
+
+	"github.com/onsi/gomega/gexec"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,7 +15,7 @@ func TestIntegration(t *testing.T) {
 }
 
 var cliPath string
-var largeContent string
+var largeContent string //nolint:unused
 
 var _ = BeforeSuite(func() {
 	if len(cliPath) == 0 {

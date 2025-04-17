@@ -30,7 +30,7 @@ func (client *AzBlobstore) Put(sourceFilePath string, dest string) error {
 		return err
 	}
 
-	defer source.Close()
+	defer source.Close() //nolint:errcheck
 
 	md5, err := client.storageClient.Upload(source, dest)
 	if err != nil {
@@ -83,7 +83,7 @@ func (client *AzBlobstore) getMD5(filePath string) ([]byte, error) {
 		return nil, err
 	}
 
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	hash := md5.New()
 	_, err = io.Copy(hash, file)

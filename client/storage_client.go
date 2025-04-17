@@ -13,6 +13,7 @@ import (
 	azBlob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
+
 	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
 )
 
@@ -66,7 +67,7 @@ func (dsc DefaultStorageClient) Upload(
 ) ([]byte, error) {
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
-	log.Println(fmt.Sprintf("Uploading %s", blobURL))
+	log.Println(fmt.Sprintf("Uploading %s", blobURL)) //nolint:staticcheck
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return nil, err
@@ -83,20 +84,20 @@ func (dsc DefaultStorageClient) Download(
 
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, source)
 
-	log.Println(fmt.Sprintf("Downloading %s", blobURL))
+	log.Println(fmt.Sprintf("Downloading %s", blobURL)) //nolint:staticcheck
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return err
 	}
 
-	blobSize, err := client.DownloadFile(context.Background(), dest, nil)
+	blobSize, err := client.DownloadFile(context.Background(), dest, nil) //nolint:ineffassign,staticcheck
 	info, err := dest.Stat()
 	if err != nil {
 		return err
 	}
 	if blobSize != info.Size() {
 		log.Printf("Truncating file according to the blob size %v", blobSize)
-		dest.Truncate(blobSize)
+		dest.Truncate(blobSize) //nolint:errcheck
 	}
 
 	return err
@@ -108,7 +109,7 @@ func (dsc DefaultStorageClient) Delete(
 
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
-	log.Println(fmt.Sprintf("Deleting %s", blobURL))
+	log.Println(fmt.Sprintf("Deleting %s", blobURL)) //nolint:staticcheck
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return err
@@ -133,7 +134,7 @@ func (dsc DefaultStorageClient) Exists(
 
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
-	log.Println(fmt.Sprintf("Checking if blob: %s exists", blobURL))
+	log.Println(fmt.Sprintf("Checking if blob: %s exists", blobURL)) //nolint:staticcheck
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return false, err
@@ -160,7 +161,7 @@ func (dsc DefaultStorageClient) SignedUrl(
 
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
-	log.Println(fmt.Sprintf("Getting signed url for blob %s", blobURL))
+	log.Println(fmt.Sprintf("Getting signed url for blob %s", blobURL)) //nolint:staticcheck
 	client, err := azBlob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return "", err

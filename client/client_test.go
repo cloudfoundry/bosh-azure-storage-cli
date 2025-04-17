@@ -2,11 +2,14 @@ package client_test
 
 import (
 	"errors"
+	"os"
+	"runtime"
+
 	"github.com/cloudfoundry/bosh-azure-storage-cli/client"
 	"github.com/cloudfoundry/bosh-azure-storage-cli/client/clientfakes"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"os"
 )
 
 var _ = Describe("Client", func() {
@@ -18,9 +21,9 @@ var _ = Describe("Client", func() {
 			azBlobstore, err := client.New(&storageClient)
 			Expect(err).ToNot(HaveOccurred())
 
-			file, _ := os.CreateTemp("", "tmpfile")
+			file, _ := os.CreateTemp("", "tmpfile") //nolint:errcheck
 
-			azBlobstore.Put(file.Name(), "target/blob")
+			azBlobstore.Put(file.Name(), "target/blob") //nolint:errcheck
 
 			Expect(storageClient.UploadCallCount()).To(Equal(1))
 			source, dest := storageClient.UploadArgsForCall(0)
@@ -38,7 +41,13 @@ var _ = Describe("Client", func() {
 			err = azBlobstore.Put("the/path", "target/blob")
 
 			Expect(storageClient.UploadCallCount()).To(Equal(0))
-			Expect(err.Error()).To(Equal("open the/path: no such file or directory"))
+			var expectedError string
+			if runtime.GOOS == "windows" {
+				expectedError = "open the/path: The system cannot find the path specified."
+			} else {
+				expectedError = "open the/path: no such file or directory"
+			}
+			Expect(err.Error()).To(Equal(expectedError))
 		})
 
 		It("fails if the source file md5 does not match the responded md5", func() {
@@ -48,7 +57,7 @@ var _ = Describe("Client", func() {
 			azBlobstore, err := client.New(&storageClient)
 			Expect(err).ToNot(HaveOccurred())
 
-			file, _ := os.CreateTemp("", "tmpfile")
+			file, _ := os.CreateTemp("", "tmpfile") //nolint:errcheck
 
 			putError := azBlobstore.Put(file.Name(), "target/blob")
 			Expect(putError.Error()).To(Equal("the upload responded an MD5 [1 2 3] does not match the source file MD5 [212 29 140 217 143 0 178 4 233 128 9 152 236 248 66 126]"))
@@ -70,9 +79,9 @@ var _ = Describe("Client", func() {
 		azBlobstore, err := client.New(&storageClient)
 		Expect(err).ToNot(HaveOccurred())
 
-		file, _ := os.CreateTemp("", "tmpfile")
+		file, _ := os.CreateTemp("", "tmpfile") //nolint:errcheck
 
-		azBlobstore.Get("source/blob", file)
+		azBlobstore.Get("source/blob", file) //nolint:errcheck
 
 		Expect(storageClient.DownloadCallCount()).To(Equal(1))
 		source, dest := storageClient.DownloadArgsForCall(0)
@@ -87,7 +96,7 @@ var _ = Describe("Client", func() {
 		azBlobstore, err := client.New(&storageClient)
 		Expect(err).ToNot(HaveOccurred())
 
-		azBlobstore.Delete("blob")
+		azBlobstore.Delete("blob") //nolint:errcheck
 
 		Expect(storageClient.DeleteCallCount()).To(Equal(1))
 		dest := storageClient.DeleteArgsForCall(0)
@@ -100,7 +109,7 @@ var _ = Describe("Client", func() {
 			storageClient := clientfakes.FakeStorageClient{}
 			storageClient.ExistsReturns(true, nil)
 
-			azBlobstore, _ := client.New(&storageClient)
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
 			existsState, err := azBlobstore.Exists("blob")
 			Expect(existsState == true).To(BeTrue())
 			Expect(err).ToNot(HaveOccurred())
@@ -113,7 +122,7 @@ var _ = Describe("Client", func() {
 			storageClient := clientfakes.FakeStorageClient{}
 			storageClient.ExistsReturns(false, nil)
 
-			azBlobstore, _ := client.New(&storageClient)
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
 			existsState, err := azBlobstore.Exists("blob")
 			Expect(existsState == false).To(BeTrue())
 			Expect(err).ToNot(HaveOccurred())
@@ -126,7 +135,7 @@ var _ = Describe("Client", func() {
 			storageClient := clientfakes.FakeStorageClient{}
 			storageClient.ExistsReturns(false, errors.New("boom"))
 
-			azBlobstore, _ := client.New(&storageClient)
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
 			existsState, err := azBlobstore.Exists("blob")
 			Expect(existsState == false).To(BeTrue())
 			Expect(err).To(HaveOccurred())
@@ -141,7 +150,7 @@ var _ = Describe("Client", func() {
 			storageClient := clientfakes.FakeStorageClient{}
 			storageClient.SignedUrlReturns("https://the-signed-url", nil)
 
-			azBlobstore, _ := client.New(&storageClient)
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
 			url, err := azBlobstore.Sign("blob", "get", 100)
 			Expect(url == "https://the-signed-url").To(BeTrue())
 			Expect(err).ToNot(HaveOccurred())
@@ -156,7 +165,7 @@ var _ = Describe("Client", func() {
 			storageClient := clientfakes.FakeStorageClient{}
 			storageClient.SignedUrlReturns("", errors.New("boom"))
 
-			azBlobstore, _ := client.New(&storageClient)
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
 			url, err := azBlobstore.Sign("blob", "unknown", 100)
 			Expect(url).To(Equal(""))
 			Expect(err).To(HaveOccurred())
