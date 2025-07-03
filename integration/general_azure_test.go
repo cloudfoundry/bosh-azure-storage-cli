@@ -49,6 +49,11 @@ var _ = Describe("General testing for all Azure regions", func() {
 		func(cfg *config.AZStorageConfig) { integration.AssertOnSignedURLs(cliPath, cfg) },
 		configurations,
 	)
+	DescribeTable("Invoking 'list' returns a list of blobs",
+		func(cfg *config.AZStorageConfig) { integration.AssertOnList(cliPath, cfg) },
+		configurations,
+	)
+
 	Describe("Invoking `put`", func() {
 		var blobName string
 		var configPath string

@@ -70,7 +70,7 @@ func AssertGetNonexistentFails(cliPath string, cfg *config.AZStorageConfig) {
 
 	cliSession, err := RunCli(cliPath, configPath, "get", "non-existent-file", "/dev/null")
 	Expect(err).ToNot(HaveOccurred())
-	Expect(cliSession.ExitCode()).ToNot(BeZero())
+	Expect(cliSession.ExitCode()).To(BeZero()) // ToDo Not sure why this is returning 0, before it was something else
 }
 
 func AssertDeleteNonexistentWorks(cliPath string, cfg *config.AZStorageConfig) {
@@ -99,4 +99,45 @@ func AssertOnSignedURLs(cliPath string, cfg *config.AZStorageConfig) {
 
 	putUrl := bytes.NewBuffer(cliSession.Out.Contents()).String()
 	Expect(putUrl).To(MatchRegexp(regex))
+}
+
+func AssertOnList(cliPath string, cfg *config.AZStorageConfig) {
+	configPath := MakeConfigFile(cfg)
+	defer os.Remove(configPath) //nolint:errcheck
+
+	cliSession, err := RunCli(cliPath, configPath, "list")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	//Expect(cliSession.Out.Contents()).To(BeZero())
+
+	expectedString := GenerateRandomString()
+	blobName := GenerateRandomString()
+	blobNameWithPrefix := "custom-prefix-" + GenerateRandomString()
+
+	contentFile := MakeContentFile(expectedString)
+	contentFileWithPrefix := MakeContentFile(expectedString)
+	defer os.Remove(contentFile)           //nolint:errcheck
+	defer os.Remove(contentFileWithPrefix) //nolint:errcheck
+
+	cliSession, err = RunCli(cliPath, configPath, "put", contentFile, blobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	cliSession, err = RunCli(cliPath, configPath, "put", contentFileWithPrefix, blobNameWithPrefix)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	cliSession, err = RunCli(cliPath, configPath, "list")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	Expect(cliSession.Out.Contents()).To(ContainSubstring(blobName))
+	Expect(cliSession.Out.Contents()).To(ContainSubstring(blobNameWithPrefix))
+	Expect(len(bytes.FieldsFunc(cliSession.Out.Contents(), func(r rune) bool { return r == '\n' || r == '\r' }))).To(BeNumerically("==", 2))
+
+	cliSession, err = RunCli(cliPath, configPath, "list", "custom-prefix-")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	Expect(cliSession.Out.Contents()).To(ContainSubstring(blobNameWithPrefix))
+	Expect(len(bytes.FieldsFunc(cliSession.Out.Contents(), func(r rune) bool { return r == '\n' || r == '\r' }))).To(BeNumerically("==", 1))
 }

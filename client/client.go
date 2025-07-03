@@ -93,3 +93,7 @@ func (client *AzBlobstore) getMD5(filePath string) ([]byte, error) {
 
 	return hash.Sum(nil), nil
 }
+
+func (client *AzBlobstore) List(prefix string) ([]string, error) {
+	return client.storageClient.List(prefix)
+}
