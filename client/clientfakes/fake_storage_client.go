@@ -47,6 +47,19 @@ type FakeStorageClient struct {
 		result1 bool
 		result2 error
 	}
+	ListStub        func(string) ([]string, error)
+	listMutex       sync.RWMutex
+	listArgsForCall []struct {
+		arg1 string
+	}
+	listReturns struct {
+		result1 []string
+		result2 error
+	}
+	listReturnsOnCall map[int]struct {
+		result1 []string
+		result2 error
+	}
 	SignedUrlStub        func(string, string, time.Duration) (string, error)
 	signedUrlMutex       sync.RWMutex
 	signedUrlArgsForCall []struct {
@@ -267,6 +280,70 @@ func (fake *FakeStorageClient) ExistsReturnsOnCall(i int, result1 bool, result2 
 	}{result1, result2}
 }
 
+func (fake *FakeStorageClient) List(arg1 string) ([]string, error) {
+	fake.listMutex.Lock()
+	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
+	fake.listArgsForCall = append(fake.listArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
+	fake.recordInvocation("List", []interface{}{arg1})
+	fake.listMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStorageClient) ListCallCount() int {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	return len(fake.listArgsForCall)
+}
+
+func (fake *FakeStorageClient) ListCalls(stub func(string) ([]string, error)) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
+	fake.ListStub = stub
+}
+
+func (fake *FakeStorageClient) ListArgsForCall(i int) string {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	argsForCall := fake.listArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStorageClient) ListReturns(result1 []string, result2 error) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
+	fake.ListStub = nil
+	fake.listReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStorageClient) ListReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
+	fake.ListStub = nil
+	if fake.listReturnsOnCall == nil {
+		fake.listReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.listReturnsOnCall[i] = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeStorageClient) SignedUrl(arg1 string, arg2 string, arg3 time.Duration) (string, error) {
 	fake.signedUrlMutex.Lock()
 	ret, specificReturn := fake.signedUrlReturnsOnCall[len(fake.signedUrlArgsForCall)]
@@ -407,6 +484,8 @@ func (fake *FakeStorageClient) Invocations() map[string][][]interface{} {
 	defer fake.downloadMutex.RUnlock()
 	fake.existsMutex.RLock()
 	defer fake.existsMutex.RUnlock()
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
 	fake.signedUrlMutex.RLock()
 	defer fake.signedUrlMutex.RUnlock()
 	fake.uploadMutex.RLock()

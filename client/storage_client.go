@@ -12,6 +12,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	azBlob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	azContainer "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 
 	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
@@ -42,6 +44,10 @@ type StorageClient interface {
 		dest string,
 		expiration time.Duration,
 	) (string, error)
+
+	List(
+		prefix string,
+	) ([]string, error)
 }
 
 type DefaultStorageClient struct {
@@ -186,4 +192,41 @@ func (dsc DefaultStorageClient) SignedUrl(
 	}
 
 	return url, err
+}
+
+func (dsc DefaultStorageClient) List(
+	prefix string,
+) ([]string, error) {
+
+	if prefix != "" {
+		log.Println(fmt.Sprintf("Listing blobs in container %s with prefix '%s'", dsc.storageConfig.ContainerName, prefix)) //nolint:staticcheck
+	} else {
+		log.Println(fmt.Sprintf("Listing blobs in container %s", dsc.storageConfig.ContainerName)) //nolint:staticcheck
+	}
+
+	client, err := azContainer.NewClientWithSharedKeyCredential(dsc.serviceURL, dsc.credential, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create container client: %w", err)
+	}
+
+	options := &container.ListBlobsFlatOptions{}
+	if prefix != "" {
+		options.Prefix = &prefix
+	}
+
+	pager := client.NewListBlobsFlatPager(options)
+	var blobs []string
+
+	for pager.More() {
+		resp, err := pager.NextPage(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving page of blobs: %w", err)
+		}
+
+		for _, blob := range resp.Segment.BlobItems {
+			blobs = append(blobs, *blob.Name)
+		}
+	}
+
+	return blobs, nil
 }

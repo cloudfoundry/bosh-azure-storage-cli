@@ -45,7 +45,7 @@ func main() {
 	}
 
 	nonFlagArgs := flag.Args()
-	if len(nonFlagArgs) < 2 {
+	if len(nonFlagArgs) < 2 && nonFlagArgs[0] != "list" {
 		log.Fatalf("Expected at least two arguments got %d\n", len(nonFlagArgs))
 	}
 
@@ -129,6 +129,27 @@ func main() {
 
 		fmt.Print(signedURL)
 		os.Exit(0)
+
+	case "list":
+		var prefix string
+
+		if len(nonFlagArgs) == 1 {
+			prefix = ""
+		} else if len(nonFlagArgs) == 2 {
+			prefix = nonFlagArgs[1]
+		} else {
+			log.Fatalf("List method expected 1 or 2 arguments, got %d\n", len(nonFlagArgs)-1)
+		}
+
+		var objects []string
+		objects, err = blobstoreClient.List(prefix)
+		if err != nil {
+			log.Fatalf("Failed to list objects: %s", err)
+		}
+
+		for _, object := range objects {
+			fmt.Println(object)
+		}
 
 	default:
 		log.Fatalf("unknown command: '%s'\n", cmd)
