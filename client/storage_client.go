@@ -31,7 +31,16 @@ type StorageClient interface {
 		dest *os.File,
 	) error
 
+	Copy(
+		srcBlob string,
+		destBlob string,
+	) error
+
 	Delete(
+		dest string,
+	) error
+
+	DeleteRecursive(
 		dest string,
 	) error
 
@@ -112,6 +121,50 @@ func (dsc DefaultStorageClient) Download(
 	return nil
 }
 
+func (dsc DefaultStorageClient) Copy(
+	srcBlob string,
+	destBlob string,
+) error {
+	log.Printf("Copying blob from %s to %s", srcBlob, destBlob)
+
+	srcURL := fmt.Sprintf("%s/%s", dsc.serviceURL, srcBlob)
+	destURL := fmt.Sprintf("%s/%s", dsc.serviceURL, destBlob)
+
+	destClient, err := blockblob.NewClientWithSharedKeyCredential(destURL, dsc.credential, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create destination client: %w", err)
+	}
+
+	resp, err := destClient.StartCopyFromURL(context.Background(), srcURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start copy: %w", err)
+	}
+
+	copyID := *resp.CopyID
+	log.Printf("Copy started with CopyID: %s", copyID)
+
+	// Wait for completion
+	for {
+		props, err := destClient.GetProperties(context.Background(), nil)
+		if err != nil {
+			return fmt.Errorf("failed to get properties: %w", err)
+		}
+
+		copyStatus := *props.CopyStatus
+		log.Printf("Copy status: %s", copyStatus)
+
+		switch copyStatus {
+		case "success":
+			log.Println("Copy completed successfully")
+			return nil
+		case "pending":
+			time.Sleep(200 * time.Millisecond)
+		default:
+			return fmt.Errorf("copy failed or aborted with status: %s", copyStatus)
+		}
+	}
+}
+
 func (dsc DefaultStorageClient) Delete(
 	dest string,
 ) error {
@@ -135,6 +188,51 @@ func (dsc DefaultStorageClient) Delete(
 	}
 
 	return err
+}
+
+func (dsc DefaultStorageClient) DeleteRecursive(
+	prefix string,
+) error {
+	if prefix != "" {
+		log.Printf("Deleting all blobs in container %s with prefix '%s'\n", dsc.storageConfig.ContainerName, prefix)
+	} else {
+		log.Printf("Deleting all blobs in container %s\n", dsc.storageConfig.ContainerName)
+	}
+
+	containerClient, err := azContainer.NewClientWithSharedKeyCredential(dsc.serviceURL, dsc.credential, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create container client: %w", err)
+	}
+
+	options := &container.ListBlobsFlatOptions{}
+	if prefix != "" {
+		options.Prefix = &prefix
+	}
+
+	pager := containerClient.NewListBlobsFlatPager(options)
+
+	for pager.More() {
+		resp, err := pager.NextPage(context.Background())
+		if err != nil {
+			return fmt.Errorf("error retrieving page of blobs: %w", err)
+		}
+
+		for _, blob := range resp.Segment.BlobItems {
+			blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, *blob.Name)
+			blobClient, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
+			if err != nil {
+				log.Printf("Failed to create blob client for %s: %v\n", *blob.Name, err)
+				continue
+			}
+
+			_, err = blobClient.BlobClient().Delete(context.Background(), nil)
+			if err != nil && !strings.Contains(err.Error(), "RESPONSE 404") {
+				log.Printf("Failed to delete blob %s: %v\n", *blob.Name, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (dsc DefaultStorageClient) Exists(

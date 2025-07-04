@@ -49,8 +49,13 @@ var _ = Describe("General testing for all Azure regions", func() {
 		func(cfg *config.AZStorageConfig) { integration.AssertOnSignedURLs(cliPath, cfg) },
 		configurations,
 	)
-	DescribeTable("Invoking 'list' returns a list of blobs",
-		func(cfg *config.AZStorageConfig) { integration.AssertOnList(cliPath, cfg) },
+	DescribeTable("Blobstore list and delete lifecycle works",
+		func(cfg *config.AZStorageConfig) { integration.AssertOnListDeleteLifecyle(cliPath, cfg) },
+		configurations,
+	)
+
+	DescribeTable("Server-side copy works",
+		func(cfg *config.AZStorageConfig) { integration.AssertOnCopy(cliPath, cfg) },
 		configurations,
 	)
 

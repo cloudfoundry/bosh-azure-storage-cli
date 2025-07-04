@@ -62,6 +62,11 @@ func (client *AzBlobstore) Delete(dest string) error {
 	return client.storageClient.Delete(dest)
 }
 
+func (client *AzBlobstore) DeleteRecursive(prefix string) error {
+
+	return client.storageClient.DeleteRecursive(prefix)
+}
+
 func (client *AzBlobstore) Exists(dest string) (bool, error) {
 
 	return client.storageClient.Exists(dest)
@@ -96,4 +101,9 @@ func (client *AzBlobstore) getMD5(filePath string) ([]byte, error) {
 
 func (client *AzBlobstore) List(prefix string) ([]string, error) {
 	return client.storageClient.List(prefix)
+}
+
+func (client *AzBlobstore) Copy(srcBlob string, dstBlob string) error {
+
+	return client.storageClient.Copy(srcBlob, dstBlob)
 }

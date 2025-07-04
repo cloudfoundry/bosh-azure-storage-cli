@@ -45,10 +45,6 @@ func main() {
 	}
 
 	nonFlagArgs := flag.Args()
-	if len(nonFlagArgs) < 2 && nonFlagArgs[0] != "list" {
-		log.Fatalf("Expected at least two arguments got %d\n", len(nonFlagArgs))
-	}
-
 	cmd := nonFlagArgs[0]
 
 	switch cmd {
@@ -83,6 +79,16 @@ func main() {
 		err = blobstoreClient.Get(src, dstFile)
 		fatalLog(cmd, err)
 
+	case "copy":
+		if len(nonFlagArgs) != 3 {
+			log.Fatalf("Get method expected 3 arguments got %d\n", len(nonFlagArgs))
+		}
+
+		srcBlob, dstBlob := nonFlagArgs[1], nonFlagArgs[2]
+
+		err = blobstoreClient.Copy(srcBlob, dstBlob)
+		fatalLog(cmd, err)
+
 	case "delete":
 		if len(nonFlagArgs) != 2 {
 			log.Fatalf("Delete method expected 2 arguments got %d\n", len(nonFlagArgs))
@@ -90,6 +96,18 @@ func main() {
 
 		err = blobstoreClient.Delete(nonFlagArgs[1])
 		fatalLog(cmd, err)
+
+	case "delete-recursive":
+		var prefix string
+		if len(nonFlagArgs) > 2 {
+			log.Fatalf("delete-recursive takes at most one argument (prefix) got %d\n", len(nonFlagArgs)-1)
+		} else if len(nonFlagArgs) == 2 {
+			prefix = nonFlagArgs[1]
+		} else {
+			prefix = ""
+		}
+		err = blobstoreClient.DeleteRecursive(prefix)
+		fatalLog("delete-recursive", err)
 
 	case "exists":
 		if len(nonFlagArgs) != 2 {

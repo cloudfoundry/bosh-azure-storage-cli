@@ -101,7 +101,7 @@ func AssertOnSignedURLs(cliPath string, cfg *config.AZStorageConfig) {
 	Expect(putUrl).To(MatchRegexp(regex))
 }
 
-func AssertOnList(cliPath string, cfg *config.AZStorageConfig) {
+func AssertOnListDeleteLifecyle(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
 	defer os.Remove(configPath) //nolint:errcheck
 
@@ -109,35 +109,118 @@ func AssertOnList(cliPath string, cfg *config.AZStorageConfig) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cliSession.ExitCode()).To(BeZero())
 
-	//Expect(cliSession.Out.Contents()).To(BeZero())
+	Expect(len(cliSession.Out.Contents())).To(BeZero())
 
-	expectedString := GenerateRandomString()
-	blobName := GenerateRandomString()
-	blobNameWithPrefix := "custom-prefix-" + GenerateRandomString()
+	CreateRandomBlobs(cliPath, cfg, 4, "")
 
-	contentFile := MakeContentFile(expectedString)
-	contentFileWithPrefix := MakeContentFile(expectedString)
-	defer os.Remove(contentFile)           //nolint:errcheck
-	defer os.Remove(contentFileWithPrefix) //nolint:errcheck
+	customPrefix := "custom-prefix-"
+	CreateRandomBlobs(cliPath, cfg, 4, customPrefix)
 
-	cliSession, err = RunCli(cliPath, configPath, "put", contentFile, blobName)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cliSession.ExitCode()).To(BeZero())
+	otherPrefix := "other-prefix-"
+	CreateRandomBlobs(cliPath, cfg, 2, otherPrefix)
 
-	cliSession, err = RunCli(cliPath, configPath, "put", contentFileWithPrefix, blobNameWithPrefix)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cliSession.ExitCode()).To(BeZero())
-
+	// Assert that the blobs are listed correctly
 	cliSession, err = RunCli(cliPath, configPath, "list")
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cliSession.ExitCode()).To(BeZero())
-	Expect(cliSession.Out.Contents()).To(ContainSubstring(blobName))
-	Expect(cliSession.Out.Contents()).To(ContainSubstring(blobNameWithPrefix))
-	Expect(len(bytes.FieldsFunc(cliSession.Out.Contents(), func(r rune) bool { return r == '\n' || r == '\r' }))).To(BeNumerically("==", 2))
+	Expect(len(bytes.FieldsFunc(cliSession.Out.Contents(), func(r rune) bool { return r == '\n' || r == '\r' }))).To(BeNumerically("==", 10))
 
-	cliSession, err = RunCli(cliPath, configPath, "list", "custom-prefix-")
+	// Assert that the all blobs with custom prefix are listed correctly
+	cliSession, err = RunCli(cliPath, configPath, "list", customPrefix)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cliSession.ExitCode()).To(BeZero())
-	Expect(cliSession.Out.Contents()).To(ContainSubstring(blobNameWithPrefix))
-	Expect(len(bytes.FieldsFunc(cliSession.Out.Contents(), func(r rune) bool { return r == '\n' || r == '\r' }))).To(BeNumerically("==", 1))
+	Expect(len(bytes.FieldsFunc(cliSession.Out.Contents(), func(r rune) bool { return r == '\n' || r == '\r' }))).To(BeNumerically("==", 4))
+
+	// Delete all blobs with custom prefix
+	cliSession, err = RunCli(cliPath, configPath, "delete-recursive", customPrefix)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	// Assert that the blobs with custom prefix are deleted
+	cliSession, err = RunCli(cliPath, configPath, "list", customPrefix)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	Expect(len(cliSession.Out.Contents())).To(BeZero())
+
+	// Assert that the other prefixed blobs are still listed
+	cliSession, err = RunCli(cliPath, configPath, "list", otherPrefix)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	Expect(len(bytes.FieldsFunc(cliSession.Out.Contents(), func(r rune) bool { return r == '\n' || r == '\r' }))).To(BeNumerically("==", 2))
+
+	// Delete all other blobs
+	cliSession, err = RunCli(cliPath, configPath, "delete-recursive", "")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	// Assert that all blobs are deleted
+	cliSession, err = RunCli(cliPath, configPath, "list")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	Expect(len(cliSession.Out.Contents())).To(BeZero())
+}
+
+func AssertOnCopy(cliPath string, cfg *config.AZStorageConfig) {
+	configPath := MakeConfigFile(cfg)
+	defer os.Remove(configPath) //nolint:errcheck
+
+	// Create a blob to copy
+	blobName := GenerateRandomString()
+	blobContent := GenerateRandomString()
+	contentFile := MakeContentFile(blobContent)
+	defer os.Remove(contentFile) //nolint:errcheck
+
+	cliSession, err := RunCli(cliPath, configPath, "put", contentFile, blobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	// Copy the blob to a new name
+	copiedBlobName := GenerateRandomString()
+	cliSession, err = RunCli(cliPath, configPath, "copy", blobName, copiedBlobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	// Assert that the copied blob exists
+	cliSession, err = RunCli(cliPath, configPath, "exists", copiedBlobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	// Compare the content of the original and copied blobs
+	tmpLocalFile, err := os.CreateTemp("", "download-copy")
+	Expect(err).ToNot(HaveOccurred())
+	err = tmpLocalFile.Close()
+	Expect(err).ToNot(HaveOccurred())
+	defer os.Remove(tmpLocalFile.Name()) //nolint:errcheck
+	cliSession, err = RunCli(cliPath, configPath, "get", blobName, tmpLocalFile.Name())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	gottenBytes, err := os.ReadFile(tmpLocalFile.Name())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(string(gottenBytes)).To(Equal(blobContent))
+
+	// Clean up
+	cliSession, err = RunCli(cliPath, configPath, "delete", blobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	cliSession, err = RunCli(cliPath, configPath, "delete", copiedBlobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+}
+
+func CreateRandomBlobs(cliPath string, cfg *config.AZStorageConfig, count int, prefix string) {
+	configPath := MakeConfigFile(cfg)
+	defer os.Remove(configPath) //nolint:errcheck
+
+	for i := 0; i < count; i++ {
+		blobName := GenerateRandomString()
+		if prefix != "" {
+			blobName = prefix + blobName
+		}
+		contentFile := MakeContentFile(GenerateRandomString())
+		defer os.Remove(contentFile) //nolint:errcheck
+
+		cliSession, err := RunCli(cliPath, configPath, "put", contentFile, blobName)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cliSession.ExitCode()).To(BeZero())
+	}
 }
