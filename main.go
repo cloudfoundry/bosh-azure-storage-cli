@@ -177,6 +177,14 @@ func main() {
 		err = blobstoreClient.Properties(nonFlagArgs[1])
 		fatalLog("properties", err)
 
+	case "ensure-bucket-exists":
+		if len(nonFlagArgs) != 1 {
+			log.Fatalf("EnsureBucketExists method expected 1 arguments got %d\n", len(nonFlagArgs))
+		}
+
+		err = blobstoreClient.EnsureContainerExists()
+		fatalLog("ensure-bucket-exists", err)
+
 	default:
 		log.Fatalf("unknown command: '%s'\n", cmd)
 	}

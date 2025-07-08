@@ -3,7 +3,10 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"io"
 	"log"
 	"os"
@@ -61,6 +64,7 @@ type StorageClient interface {
 	Properties(
 		dest string,
 	) error
+	EnsureContainerExists() error
 }
 
 type DefaultStorageClient struct {
@@ -368,5 +372,27 @@ func (dsc DefaultStorageClient) Properties(
 	}
 
 	fmt.Println(string(output))
+	return nil
+}
+
+func (dsc DefaultStorageClient) EnsureContainerExists() error {
+	log.Printf("Ensuring container '%s' exists\n", dsc.storageConfig.ContainerName)
+
+	containerClient, err := azContainer.NewClientWithSharedKeyCredential(dsc.serviceURL, dsc.credential, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create container client: %w", err)
+	}
+
+	_, err = containerClient.Create(context.Background(), nil)
+	if err != nil {
+		var respErr *azcore.ResponseError
+		if errors.As(err, &respErr) && respErr.ErrorCode == string(bloberror.ContainerAlreadyExists) {
+			log.Printf("Container '%s' already exists", dsc.storageConfig.ContainerName)
+			return nil
+		}
+		return fmt.Errorf("failed to create container: %w", err)
+	}
+
+	log.Printf("Container '%s' created successfully", dsc.storageConfig.ContainerName)
 	return nil
 }

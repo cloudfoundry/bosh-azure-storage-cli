@@ -19,7 +19,12 @@ func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 	contentFile := MakeContentFile(expectedString)
 	defer os.Remove(contentFile) //nolint:errcheck
 
-	cliSession, err := RunCli(cliPath, configPath, "put", contentFile, blobName)
+	// Ensure container/bucket exists
+	cliSession, err := RunCli(cliPath, configPath, "ensure-bucket-exists")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+
+	cliSession, err = RunCli(cliPath, configPath, "put", contentFile, blobName)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cliSession.ExitCode()).To(BeZero())
 

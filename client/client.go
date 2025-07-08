@@ -112,3 +112,8 @@ func (client *AzBlobstore) Properties(dest string) error {
 
 	return client.storageClient.Properties(dest)
 }
+
+func (client *AzBlobstore) EnsureContainerExists() error {
+
+	return client.storageClient.EnsureContainerExists()
+}
