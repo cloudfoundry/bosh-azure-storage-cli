@@ -28,6 +28,15 @@ func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 	Expect(cliSession.ExitCode()).To(BeZero())
 	Expect(cliSession.Err.Contents()).To(MatchRegexp("File '.*' exists in bucket '.*'"))
 
+	// Check blob properties
+	cliSession, err = RunCli(cliPath, configPath, "properties", blobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(BeZero())
+	output := string(cliSession.Out.Contents())
+	Expect(output).To(MatchRegexp(`"etag":\s*".+?"`))
+	Expect(output).To(MatchRegexp(`"last_modified":\s*".+?"`))
+	Expect(output).To(MatchRegexp(`"content_length":\s*\d+`))
+
 	tmpLocalFile, err := os.CreateTemp("", "azure-storage-cli-download")
 	Expect(err).ToNot(HaveOccurred())
 	err = tmpLocalFile.Close()
