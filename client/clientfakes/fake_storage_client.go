@@ -83,6 +83,17 @@ type FakeStorageClient struct {
 		result1 []string
 		result2 error
 	}
+	PropertiesStub        func(string) error
+	propertiesMutex       sync.RWMutex
+	propertiesArgsForCall []struct {
+		arg1 string
+	}
+	propertiesReturns struct {
+		result1 error
+	}
+	propertiesReturnsOnCall map[int]struct {
+		result1 error
+	}
 	SignedUrlStub        func(string, string, time.Duration) (string, error)
 	signedUrlMutex       sync.RWMutex
 	signedUrlArgsForCall []struct {
@@ -490,6 +501,67 @@ func (fake *FakeStorageClient) ListReturnsOnCall(i int, result1 []string, result
 	}{result1, result2}
 }
 
+func (fake *FakeStorageClient) Properties(arg1 string) error {
+	fake.propertiesMutex.Lock()
+	ret, specificReturn := fake.propertiesReturnsOnCall[len(fake.propertiesArgsForCall)]
+	fake.propertiesArgsForCall = append(fake.propertiesArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.PropertiesStub
+	fakeReturns := fake.propertiesReturns
+	fake.recordInvocation("Properties", []interface{}{arg1})
+	fake.propertiesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStorageClient) PropertiesCallCount() int {
+	fake.propertiesMutex.RLock()
+	defer fake.propertiesMutex.RUnlock()
+	return len(fake.propertiesArgsForCall)
+}
+
+func (fake *FakeStorageClient) PropertiesCalls(stub func(string) error) {
+	fake.propertiesMutex.Lock()
+	defer fake.propertiesMutex.Unlock()
+	fake.PropertiesStub = stub
+}
+
+func (fake *FakeStorageClient) PropertiesArgsForCall(i int) string {
+	fake.propertiesMutex.RLock()
+	defer fake.propertiesMutex.RUnlock()
+	argsForCall := fake.propertiesArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStorageClient) PropertiesReturns(result1 error) {
+	fake.propertiesMutex.Lock()
+	defer fake.propertiesMutex.Unlock()
+	fake.PropertiesStub = nil
+	fake.propertiesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStorageClient) PropertiesReturnsOnCall(i int, result1 error) {
+	fake.propertiesMutex.Lock()
+	defer fake.propertiesMutex.Unlock()
+	fake.PropertiesStub = nil
+	if fake.propertiesReturnsOnCall == nil {
+		fake.propertiesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.propertiesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStorageClient) SignedUrl(arg1 string, arg2 string, arg3 time.Duration) (string, error) {
 	fake.signedUrlMutex.Lock()
 	ret, specificReturn := fake.signedUrlReturnsOnCall[len(fake.signedUrlArgsForCall)]
@@ -636,6 +708,8 @@ func (fake *FakeStorageClient) Invocations() map[string][][]interface{} {
 	defer fake.existsMutex.RUnlock()
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
+	fake.propertiesMutex.RLock()
+	defer fake.propertiesMutex.RUnlock()
 	fake.signedUrlMutex.RLock()
 	defer fake.signedUrlMutex.RUnlock()
 	fake.uploadMutex.RLock()

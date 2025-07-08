@@ -169,6 +169,14 @@ func main() {
 			fmt.Println(object)
 		}
 
+	case "properties":
+		if len(nonFlagArgs) != 2 {
+			log.Fatalf("Properties method expected 2 arguments got %d\n", len(nonFlagArgs))
+		}
+
+		err = blobstoreClient.Properties(nonFlagArgs[1])
+		fatalLog("properties", err)
+
 	default:
 		log.Fatalf("unknown command: '%s'\n", cmd)
 	}

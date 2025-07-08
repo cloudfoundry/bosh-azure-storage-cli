@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -57,6 +58,9 @@ type StorageClient interface {
 	List(
 		prefix string,
 	) ([]string, error)
+	Properties(
+		dest string,
+	) error
 }
 
 type DefaultStorageClient struct {
@@ -327,4 +331,42 @@ func (dsc DefaultStorageClient) List(
 	}
 
 	return blobs, nil
+}
+
+type BlobProperties struct {
+	ETag          string    `json:"etag,omitempty"`
+	LastModified  time.Time `json:"last_modified,omitempty"`
+	ContentLength int64     `json:"content_length,omitempty"`
+}
+
+func (dsc DefaultStorageClient) Properties(
+	dest string,
+) error {
+
+	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
+
+	log.Println(fmt.Sprintf("Getting properties for blob %s", blobURL)) //nolint:staticcheck
+	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.GetProperties(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("failed to get properties for blob %s: %w", dest, err)
+	}
+
+	props := BlobProperties{
+		ETag:          strings.Trim(string(*resp.ETag), `"`),
+		LastModified:  *resp.LastModified,
+		ContentLength: *resp.ContentLength,
+	}
+
+	output, err := json.MarshalIndent(props, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal blob properties: %w", err)
+	}
+
+	fmt.Println(string(output))
+	return nil
 }

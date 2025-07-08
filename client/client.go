@@ -107,3 +107,8 @@ func (client *AzBlobstore) Copy(srcBlob string, dstBlob string) error {
 
 	return client.storageClient.Copy(srcBlob, dstBlob)
 }
+
+func (client *AzBlobstore) Properties(dest string) error {
+
+	return client.storageClient.Properties(dest)
+}
