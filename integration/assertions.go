@@ -64,6 +64,11 @@ func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cliSession.ExitCode()).To(Equal(3))
 	Expect(cliSession.Err.Contents()).To(MatchRegexp("File '.*' does not exist in bucket '.*'"))
+
+	cliSession, err = RunCli(cliPath, configPath, "properties", blobName)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cliSession.ExitCode()).To(Equal(0))
+	Expect(cliSession.Out.Contents()).To(MatchRegexp("{}"))
 }
 
 func AssertOnCliVersion(cliPath string, cfg *config.AZStorageConfig) {
