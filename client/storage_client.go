@@ -343,7 +343,6 @@ type BlobProperties struct {
 func (dsc DefaultStorageClient) Properties(
 	dest string,
 ) error {
-
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
 	log.Println(fmt.Sprintf("Getting properties for blob %s", blobURL)) //nolint:staticcheck
@@ -354,6 +353,10 @@ func (dsc DefaultStorageClient) Properties(
 
 	resp, err := client.GetProperties(context.Background(), nil)
 	if err != nil {
+		if strings.Contains(err.Error(), "RESPONSE 404") {
+			fmt.Println(`{}`)
+			return nil
+		}
 		return fmt.Errorf("failed to get properties for blob %s: %w", dest, err)
 	}
 
