@@ -119,6 +119,7 @@ func (dsc DefaultStorageClient) Upload(
 	}
 	return uploadResponse.ContentMD5, err
 }
+
 func (dsc DefaultStorageClient) Download(
 	source string,
 	dest *os.File,
