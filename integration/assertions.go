@@ -9,6 +9,128 @@ import (
 	. "github.com/onsi/gomega" //nolint:staticcheck
 )
 
+func AssertPutUsesDefaultTimeout(cliPath string, cfg *config.AZStorageConfig) {
+	cfg2 := *cfg
+	cfg2.Timeout = "" // triggers default 41s
+	configPath := MakeConfigFile(&cfg2)
+	defer os.Remove(configPath)
+
+	content := MakeContentFile("hello")
+	defer os.Remove(content)
+	blob := GenerateRandomString()
+
+	sess, err := RunCli(cliPath, configPath, "put", content, blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).To(BeZero())
+	// stderr contains log.Println output
+	Expect(string(sess.Err.Contents())).To(ContainSubstring("with a timeout of 41s"))
+}
+
+func AssertPutHonorsCustomTimeout(cliPath string, cfg *config.AZStorageConfig) {
+	cfg2 := *cfg
+	cfg2.Timeout = "3s"
+	configPath := MakeConfigFile(&cfg2)
+	defer os.Remove(configPath)
+
+	content := MakeContentFile("ok")
+	defer os.Remove(content)
+	blob := GenerateRandomString()
+
+	sess, err := RunCli(cliPath, configPath, "put", content, blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).To(BeZero())
+}
+
+func AssertPutTimesOut(cliPath string, cfg *config.AZStorageConfig) {
+	cfg2 := *cfg
+	cfg2.Timeout = "1ns"
+	configPath := MakeConfigFile(&cfg2)
+	defer os.Remove(configPath)
+
+	content := MakeContentFile("data")
+	defer os.Remove(content)
+	blob := GenerateRandomString()
+
+	sess, err := RunCli(cliPath, configPath, "put", content, blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).ToNot(BeZero())
+	Expect(string(sess.Err.Contents())).To(ContainSubstring("timeout of 1ns reached while uploading"))
+}
+
+func AssertInvalidTimeoutFallsBack(cliPath string, cfg *config.AZStorageConfig) {
+	cfg2 := *cfg
+	cfg2.Timeout = "bananas"
+	configPath := MakeConfigFile(&cfg2)
+	defer os.Remove(configPath)
+
+	content := MakeContentFile("x")
+	defer os.Remove(content)
+	blob := GenerateRandomString()
+
+	sess, err := RunCli(cliPath, configPath, "put", content, blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).To(BeZero())
+	Expect(string(sess.Err.Contents())).To(ContainSubstring(`Invalid timeout format "bananas"`))
+	Expect(string(sess.Err.Contents())).To(ContainSubstring("using default of 41s"))
+}
+
+func AssertSignedURLTimeouts(cliPath string, cfg *config.AZStorageConfig) {
+	configPath := MakeConfigFile(cfg)
+	defer os.Remove(configPath)
+
+	sess, err := RunCli(cliPath, configPath, "sign", "some-blob", "get", "60s")
+	Expect(err).ToNot(HaveOccurred())
+	url := string(sess.Out.Contents())
+	Expect(url).To(ContainSubstring("timeout=1800"))
+
+	sess, err = RunCli(cliPath, configPath, "sign", "some-blob", "put", "60s")
+	Expect(err).ToNot(HaveOccurred())
+	url = string(sess.Out.Contents())
+	Expect(url).To(ContainSubstring("timeout=2700"))
+}
+
+func AssertEnsureBucketIdempotent(cliPath string, cfg *config.AZStorageConfig) {
+	configPath := MakeConfigFile(cfg)
+	defer os.Remove(configPath)
+
+	s1, err := RunCli(cliPath, configPath, "ensure-bucket-exists")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(s1.ExitCode()).To(BeZero())
+
+	s2, err := RunCli(cliPath, configPath, "ensure-bucket-exists")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(s2.ExitCode()).To(BeZero())
+}
+
+func AssertPutGetWithSpecialNames(cliPath string, cfg *config.AZStorageConfig) {
+	configPath := MakeConfigFile(cfg)
+	defer os.Remove(configPath)
+
+	name := "dir a/üñîçødë file.txt"
+	content := "weird name content"
+	f := MakeContentFile(content)
+	defer os.Remove(f)
+
+	s, err := RunCli(cliPath, configPath, "put", f, name)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(s.ExitCode()).To(BeZero())
+
+	tmp, _ := os.CreateTemp("", "dl")
+	tmp.Close()
+	defer os.Remove(tmp.Name())
+
+	s, err = RunCli(cliPath, configPath, "get", name, tmp.Name())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(s.ExitCode()).To(BeZero())
+
+	b, _ := os.ReadFile(tmp.Name())
+	Expect(string(b)).To(Equal(content))
+
+	s, err = RunCli(cliPath, configPath, "delete", name)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(s.ExitCode()).To(BeZero())
+}
+
 func AssertLifecycleWorks(cliPath string, cfg *config.AZStorageConfig) {
 	expectedString := GenerateRandomString()
 	blobName := GenerateRandomString()
@@ -124,6 +246,9 @@ func AssertOnListDeleteLifecyle(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
 	defer os.Remove(configPath) //nolint:errcheck
 
+	cli, err := RunCli(cliPath, configPath, "delete-recursive", "")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cli.ExitCode()).To(BeZero())
 	cliSession, err := RunCli(cliPath, configPath, "list")
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cliSession.ExitCode()).To(BeZero())
