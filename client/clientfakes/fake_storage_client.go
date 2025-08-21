@@ -57,6 +57,16 @@ type FakeStorageClient struct {
 	downloadReturnsOnCall map[int]struct {
 		result1 error
 	}
+	EnsureContainerExistsStub        func() error
+	ensureContainerExistsMutex       sync.RWMutex
+	ensureContainerExistsArgsForCall []struct {
+	}
+	ensureContainerExistsReturns struct {
+		result1 error
+	}
+	ensureContainerExistsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ExistsStub        func(string) (bool, error)
 	existsMutex       sync.RWMutex
 	existsArgsForCall []struct {
@@ -369,6 +379,59 @@ func (fake *FakeStorageClient) DownloadReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.downloadReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStorageClient) EnsureContainerExists() error {
+	fake.ensureContainerExistsMutex.Lock()
+	ret, specificReturn := fake.ensureContainerExistsReturnsOnCall[len(fake.ensureContainerExistsArgsForCall)]
+	fake.ensureContainerExistsArgsForCall = append(fake.ensureContainerExistsArgsForCall, struct {
+	}{})
+	stub := fake.EnsureContainerExistsStub
+	fakeReturns := fake.ensureContainerExistsReturns
+	fake.recordInvocation("EnsureContainerExists", []interface{}{})
+	fake.ensureContainerExistsMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStorageClient) EnsureContainerExistsCallCount() int {
+	fake.ensureContainerExistsMutex.RLock()
+	defer fake.ensureContainerExistsMutex.RUnlock()
+	return len(fake.ensureContainerExistsArgsForCall)
+}
+
+func (fake *FakeStorageClient) EnsureContainerExistsCalls(stub func() error) {
+	fake.ensureContainerExistsMutex.Lock()
+	defer fake.ensureContainerExistsMutex.Unlock()
+	fake.EnsureContainerExistsStub = stub
+}
+
+func (fake *FakeStorageClient) EnsureContainerExistsReturns(result1 error) {
+	fake.ensureContainerExistsMutex.Lock()
+	defer fake.ensureContainerExistsMutex.Unlock()
+	fake.EnsureContainerExistsStub = nil
+	fake.ensureContainerExistsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStorageClient) EnsureContainerExistsReturnsOnCall(i int, result1 error) {
+	fake.ensureContainerExistsMutex.Lock()
+	defer fake.ensureContainerExistsMutex.Unlock()
+	fake.EnsureContainerExistsStub = nil
+	if fake.ensureContainerExistsReturnsOnCall == nil {
+		fake.ensureContainerExistsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.ensureContainerExistsReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -704,6 +767,8 @@ func (fake *FakeStorageClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteRecursiveMutex.RUnlock()
 	fake.downloadMutex.RLock()
 	defer fake.downloadMutex.RUnlock()
+	fake.ensureContainerExistsMutex.RLock()
+	defer fake.ensureContainerExistsMutex.RUnlock()
 	fake.existsMutex.RLock()
 	defer fake.existsMutex.RUnlock()
 	fake.listMutex.RLock()
