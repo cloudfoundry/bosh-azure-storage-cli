@@ -17,7 +17,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	azBlob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	azContainer "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 
@@ -232,7 +231,7 @@ func (dsc DefaultStorageClient) DeleteRecursive(
 		return fmt.Errorf("failed to create container client: %w", err)
 	}
 
-	options := &container.ListBlobsFlatOptions{}
+	options := &azContainer.ListBlobsFlatOptions{}
 	if prefix != "" {
 		options.Prefix = &prefix
 	}
@@ -335,7 +334,7 @@ func (dsc DefaultStorageClient) List(
 		return nil, fmt.Errorf("failed to create container client: %w", err)
 	}
 
-	options := &container.ListBlobsFlatOptions{}
+	options := &azContainer.ListBlobsFlatOptions{}
 	if prefix != "" {
 		options.Prefix = &prefix
 	}
