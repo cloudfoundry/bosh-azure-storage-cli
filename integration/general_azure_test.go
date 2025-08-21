@@ -33,6 +33,34 @@ var _ = Describe("General testing for all Azure regions", func() {
 	configurations := []TableEntry{
 		Entry("with default config", &defaultConfig),
 	}
+	DescribeTable("Assert Put Uses Default Timeout",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutUsesDefaultTimeout(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Put Honors Custom Timeout",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutHonorsCustomTimeout(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Put Times Out",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutTimesOut(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Invalid Timeout Falls Back",
+		func(cfg *config.AZStorageConfig) { integration.AssertInvalidTimeoutFallsBack(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Signed URL Timeouts",
+		func(cfg *config.AZStorageConfig) { integration.AssertSignedURLTimeouts(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Ensure Bucket Idempotent",
+		func(cfg *config.AZStorageConfig) { integration.AssertEnsureBucketIdempotent(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Put Get With Special Names",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutGetWithSpecialNames(cliPath, cfg) },
+		configurations,
+	)
 	DescribeTable("Blobstore lifecycle works",
 		func(cfg *config.AZStorageConfig) { integration.AssertLifecycleWorks(cliPath, cfg) },
 		configurations,
