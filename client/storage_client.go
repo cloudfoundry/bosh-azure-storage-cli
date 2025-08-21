@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	azBlob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
@@ -90,16 +91,34 @@ func (dsc DefaultStorageClient) Upload(
 ) ([]byte, error) {
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
-	log.Println(fmt.Sprintf("Uploading %s", blobURL)) //nolint:staticcheck
+	var timeout time.Duration
+	if dsc.storageConfig.Timeout == "" {
+		timeout = 41 * time.Second
+	} else {
+		var err error
+		timeout, err = time.ParseDuration(dsc.storageConfig.Timeout)
+		if err != nil {
+			log.Printf("Invalid timeout format \"%s\", need \"<seconds in number>s\" e.g. 30s, using default of 41s", dsc.storageConfig.Timeout)
+			timeout = 41 * time.Second
+		}
+	}
+
+	log.Println(fmt.Sprintf("Uploading %s with a timeout of %s", blobURL, timeout)) //nolint:staticcheck
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	uploadResponse, err := client.Upload(context.Background(), source, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	uploadResponse, err := client.Upload(ctx, source, nil)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("upload failed: timeout of %s reached while uploading %s", timeout, dest)
+		}
+		return nil, fmt.Errorf("upload failure: %w", err)
+	}
 	return uploadResponse.ContentMD5, err
 }
-
 func (dsc DefaultStorageClient) Download(
 	source string,
 	dest *os.File,

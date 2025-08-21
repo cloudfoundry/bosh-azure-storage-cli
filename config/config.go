@@ -31,6 +31,7 @@ type AZStorageConfig struct {
 	AccountKey    string `json:"account_key"`
 	ContainerName string `json:"container_name"`
 	Environment   string `json:"environment"`
+	Timeout       string `json:"timeout_in_seconds"`
 }
 
 // NewFromReader returns a new azure-storage-cli configuration struct from the contents of reader.
