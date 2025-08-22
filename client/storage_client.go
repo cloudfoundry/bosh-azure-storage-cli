@@ -91,6 +91,9 @@ func (dsc DefaultStorageClient) Download(
 	}
 
 	blobSize, err := client.DownloadFile(context.Background(), dest, nil) //nolint:ineffassign,staticcheck
+	if err != nil {
+		return err
+	}
 	info, err := dest.Stat()
 	if err != nil {
 		return err
@@ -100,7 +103,7 @@ func (dsc DefaultStorageClient) Download(
 		dest.Truncate(blobSize) //nolint:errcheck
 	}
 
-	return err
+	return nil
 }
 
 func (dsc DefaultStorageClient) Delete(
