@@ -13,10 +13,10 @@ func AssertPutUsesDefaultTimeout(cliPath string, cfg *config.AZStorageConfig) {
 	cfg2 := *cfg
 	cfg2.Timeout = "" // triggers default 41s
 	configPath := MakeConfigFile(&cfg2)
-	defer os.Remove(configPath)
+	defer os.Remove(configPath) //nolint:errcheck
 
 	content := MakeContentFile("hello")
-	defer os.Remove(content)
+	defer os.Remove(content) //nolint:errcheck
 	blob := GenerateRandomString()
 
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
@@ -30,10 +30,10 @@ func AssertPutHonorsCustomTimeout(cliPath string, cfg *config.AZStorageConfig) {
 	cfg2 := *cfg
 	cfg2.Timeout = "3s"
 	configPath := MakeConfigFile(&cfg2)
-	defer os.Remove(configPath)
+	defer os.Remove(configPath) //nolint:errcheck
 
 	content := MakeContentFile("ok")
-	defer os.Remove(content)
+	defer os.Remove(content) //nolint:errcheck
 	blob := GenerateRandomString()
 
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
@@ -45,10 +45,10 @@ func AssertPutTimesOut(cliPath string, cfg *config.AZStorageConfig) {
 	cfg2 := *cfg
 	cfg2.Timeout = "1ns"
 	configPath := MakeConfigFile(&cfg2)
-	defer os.Remove(configPath)
+	defer os.Remove(configPath) //nolint:errcheck
 
 	content := MakeContentFile("data")
-	defer os.Remove(content)
+	defer os.Remove(content) //nolint:errcheck
 	blob := GenerateRandomString()
 
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
@@ -61,10 +61,10 @@ func AssertInvalidTimeoutFallsBack(cliPath string, cfg *config.AZStorageConfig) 
 	cfg2 := *cfg
 	cfg2.Timeout = "bananas"
 	configPath := MakeConfigFile(&cfg2)
-	defer os.Remove(configPath)
+	defer os.Remove(configPath) //nolint:errcheck
 
 	content := MakeContentFile("x")
-	defer os.Remove(content)
+	defer os.Remove(content) //nolint:errcheck
 	blob := GenerateRandomString()
 
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
@@ -76,7 +76,7 @@ func AssertInvalidTimeoutFallsBack(cliPath string, cfg *config.AZStorageConfig) 
 
 func AssertSignedURLTimeouts(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
-	defer os.Remove(configPath)
+	defer os.Remove(configPath) //nolint:errcheck
 
 	sess, err := RunCli(cliPath, configPath, "sign", "some-blob", "get", "60s")
 	Expect(err).ToNot(HaveOccurred())
@@ -91,7 +91,7 @@ func AssertSignedURLTimeouts(cliPath string, cfg *config.AZStorageConfig) {
 
 func AssertEnsureBucketIdempotent(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
-	defer os.Remove(configPath)
+	defer os.Remove(configPath) //nolint:errcheck
 
 	s1, err := RunCli(cliPath, configPath, "ensure-bucket-exists")
 	Expect(err).ToNot(HaveOccurred())
@@ -104,26 +104,26 @@ func AssertEnsureBucketIdempotent(cliPath string, cfg *config.AZStorageConfig) {
 
 func AssertPutGetWithSpecialNames(cliPath string, cfg *config.AZStorageConfig) {
 	configPath := MakeConfigFile(cfg)
-	defer os.Remove(configPath)
+	defer os.Remove(configPath) //nolint:errcheck
 
 	name := "dir a/üñîçødë file.txt"
 	content := "weird name content"
 	f := MakeContentFile(content)
-	defer os.Remove(f)
+	defer os.Remove(f) //nolint:errcheck
 
 	s, err := RunCli(cliPath, configPath, "put", f, name)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(s.ExitCode()).To(BeZero())
 
-	tmp, _ := os.CreateTemp("", "dl")
-	tmp.Close()
-	defer os.Remove(tmp.Name())
+	tmp, _ := os.CreateTemp("", "dl") //nolint:errcheck
+	tmp.Close()                       //nolint:errcheck
+	defer os.Remove(tmp.Name())       //nolint:errcheck
 
 	s, err = RunCli(cliPath, configPath, "get", name, tmp.Name())
 	Expect(err).ToNot(HaveOccurred())
 	Expect(s.ExitCode()).To(BeZero())
 
-	b, _ := os.ReadFile(tmp.Name())
+	b, _ := os.ReadFile(tmp.Name()) //nolint:errcheck
 	Expect(string(b)).To(Equal(content))
 
 	s, err = RunCli(cliPath, configPath, "delete", name)
