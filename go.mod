@@ -3,15 +3,16 @@ module github.com/cloudfoundry/bosh-azure-storage-cli
 go 1.23.0
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.2
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.2
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.11.3
-	github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/ginkgo/v2 v2.25.1
 	github.com/onsi/gomega v1.38.0
 )
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
+	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
