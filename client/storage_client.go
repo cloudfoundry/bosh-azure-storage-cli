@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -9,9 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	azBlob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	azContainer "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 
 	"github.com/cloudfoundry/bosh-azure-storage-cli/config"
@@ -29,7 +35,16 @@ type StorageClient interface {
 		dest *os.File,
 	) error
 
+	Copy(
+		srcBlob string,
+		destBlob string,
+	) error
+
 	Delete(
+		dest string,
+	) error
+
+	DeleteRecursive(
 		dest string,
 	) error
 
@@ -42,6 +57,14 @@ type StorageClient interface {
 		dest string,
 		expiration time.Duration,
 	) (string, error)
+
+	List(
+		prefix string,
+	) ([]string, error)
+	Properties(
+		dest string,
+	) error
+	EnsureContainerExists() error
 }
 
 type DefaultStorageClient struct {
@@ -67,13 +90,32 @@ func (dsc DefaultStorageClient) Upload(
 ) ([]byte, error) {
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
-	log.Println(fmt.Sprintf("Uploading %s", blobURL)) //nolint:staticcheck
+	var timeout time.Duration
+	if dsc.storageConfig.Timeout == "" {
+		timeout = 41 * time.Second
+	} else {
+		var err error
+		timeout, err = time.ParseDuration(dsc.storageConfig.Timeout)
+		if err != nil {
+			log.Printf("Invalid timeout format \"%s\", need \"<seconds in number>s\" e.g. 30s, using default of 41s", dsc.storageConfig.Timeout)
+			timeout = 41 * time.Second
+		}
+	}
+
+	log.Println(fmt.Sprintf("Uploading %s with a timeout of %s", blobURL, timeout)) //nolint:staticcheck
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	uploadResponse, err := client.Upload(context.Background(), source, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	uploadResponse, err := client.Upload(ctx, source, nil)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("upload failed: timeout of %s reached while uploading %s", timeout, dest)
+		}
+		return nil, fmt.Errorf("upload failure: %w", err)
+	}
 	return uploadResponse.ContentMD5, err
 }
 
@@ -106,6 +148,50 @@ func (dsc DefaultStorageClient) Download(
 	return nil
 }
 
+func (dsc DefaultStorageClient) Copy(
+	srcBlob string,
+	destBlob string,
+) error {
+	log.Printf("Copying blob from %s to %s", srcBlob, destBlob)
+
+	srcURL := fmt.Sprintf("%s/%s", dsc.serviceURL, srcBlob)
+	destURL := fmt.Sprintf("%s/%s", dsc.serviceURL, destBlob)
+
+	destClient, err := blockblob.NewClientWithSharedKeyCredential(destURL, dsc.credential, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create destination client: %w", err)
+	}
+
+	resp, err := destClient.StartCopyFromURL(context.Background(), srcURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start copy: %w", err)
+	}
+
+	copyID := *resp.CopyID
+	log.Printf("Copy started with CopyID: %s", copyID)
+
+	// Wait for completion
+	for {
+		props, err := destClient.GetProperties(context.Background(), nil)
+		if err != nil {
+			return fmt.Errorf("failed to get properties: %w", err)
+		}
+
+		copyStatus := *props.CopyStatus
+		log.Printf("Copy status: %s", copyStatus)
+
+		switch copyStatus {
+		case "success":
+			log.Println("Copy completed successfully")
+			return nil
+		case "pending":
+			time.Sleep(200 * time.Millisecond)
+		default:
+			return fmt.Errorf("copy failed or aborted with status: %s", copyStatus)
+		}
+	}
+}
+
 func (dsc DefaultStorageClient) Delete(
 	dest string,
 ) error {
@@ -129,6 +215,51 @@ func (dsc DefaultStorageClient) Delete(
 	}
 
 	return err
+}
+
+func (dsc DefaultStorageClient) DeleteRecursive(
+	prefix string,
+) error {
+	if prefix != "" {
+		log.Printf("Deleting all blobs in container %s with prefix '%s'\n", dsc.storageConfig.ContainerName, prefix)
+	} else {
+		log.Printf("Deleting all blobs in container %s\n", dsc.storageConfig.ContainerName)
+	}
+
+	containerClient, err := azContainer.NewClientWithSharedKeyCredential(dsc.serviceURL, dsc.credential, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create container client: %w", err)
+	}
+
+	options := &azContainer.ListBlobsFlatOptions{}
+	if prefix != "" {
+		options.Prefix = &prefix
+	}
+
+	pager := containerClient.NewListBlobsFlatPager(options)
+
+	for pager.More() {
+		resp, err := pager.NextPage(context.Background())
+		if err != nil {
+			return fmt.Errorf("error retrieving page of blobs: %w", err)
+		}
+
+		for _, blob := range resp.Segment.BlobItems {
+			blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, *blob.Name)
+			blobClient, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
+			if err != nil {
+				log.Printf("Failed to create blob client for %s: %v\n", *blob.Name, err)
+				continue
+			}
+
+			_, err = blobClient.BlobClient().Delete(context.Background(), nil)
+			if err != nil && !strings.Contains(err.Error(), "RESPONSE 404") {
+				log.Printf("Failed to delete blob %s: %v\n", *blob.Name, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (dsc DefaultStorageClient) Exists(
@@ -186,4 +317,104 @@ func (dsc DefaultStorageClient) SignedUrl(
 	}
 
 	return url, err
+}
+
+func (dsc DefaultStorageClient) List(
+	prefix string,
+) ([]string, error) {
+
+	if prefix != "" {
+		log.Println(fmt.Sprintf("Listing blobs in container %s with prefix '%s'", dsc.storageConfig.ContainerName, prefix)) //nolint:staticcheck
+	} else {
+		log.Println(fmt.Sprintf("Listing blobs in container %s", dsc.storageConfig.ContainerName)) //nolint:staticcheck
+	}
+
+	client, err := azContainer.NewClientWithSharedKeyCredential(dsc.serviceURL, dsc.credential, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create container client: %w", err)
+	}
+
+	options := &azContainer.ListBlobsFlatOptions{}
+	if prefix != "" {
+		options.Prefix = &prefix
+	}
+
+	pager := client.NewListBlobsFlatPager(options)
+	var blobs []string
+
+	for pager.More() {
+		resp, err := pager.NextPage(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving page of blobs: %w", err)
+		}
+
+		for _, blob := range resp.Segment.BlobItems {
+			blobs = append(blobs, *blob.Name)
+		}
+	}
+
+	return blobs, nil
+}
+
+type BlobProperties struct {
+	ETag          string    `json:"etag,omitempty"`
+	LastModified  time.Time `json:"last_modified,omitempty"`
+	ContentLength int64     `json:"content_length,omitempty"`
+}
+
+func (dsc DefaultStorageClient) Properties(
+	dest string,
+) error {
+	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
+
+	log.Println(fmt.Sprintf("Getting properties for blob %s", blobURL)) //nolint:staticcheck
+	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.GetProperties(context.Background(), nil)
+	if err != nil {
+		if strings.Contains(err.Error(), "RESPONSE 404") {
+			fmt.Println(`{}`)
+			return nil
+		}
+		return fmt.Errorf("failed to get properties for blob %s: %w", dest, err)
+	}
+
+	props := BlobProperties{
+		ETag:          strings.Trim(string(*resp.ETag), `"`),
+		LastModified:  *resp.LastModified,
+		ContentLength: *resp.ContentLength,
+	}
+
+	output, err := json.MarshalIndent(props, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal blob properties: %w", err)
+	}
+
+	fmt.Println(string(output))
+	return nil
+}
+
+func (dsc DefaultStorageClient) EnsureContainerExists() error {
+	log.Printf("Ensuring container '%s' exists\n", dsc.storageConfig.ContainerName)
+
+	containerClient, err := azContainer.NewClientWithSharedKeyCredential(dsc.serviceURL, dsc.credential, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create container client: %w", err)
+	}
+
+	_, err = containerClient.Create(context.Background(), nil)
+	if err != nil {
+		var respErr *azcore.ResponseError
+		if errors.As(err, &respErr) && respErr.ErrorCode == string(bloberror.ContainerAlreadyExists) {
+			log.Printf("Container '%s' already exists", dsc.storageConfig.ContainerName)
+			return nil
+		}
+		return fmt.Errorf("failed to create container: %w", err)
+	}
+
+	log.Printf("Container '%s' created successfully", dsc.storageConfig.ContainerName)
+	return nil
 }
