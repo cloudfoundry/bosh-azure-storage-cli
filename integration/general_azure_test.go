@@ -33,8 +33,8 @@ var _ = Describe("General testing for all Azure regions", func() {
 	configurations := []TableEntry{
 		Entry("with default config", &defaultConfig),
 	}
-	DescribeTable("Assert Put Uses Default Timeout",
-		func(cfg *config.AZStorageConfig) { integration.AssertPutUsesDefaultTimeout(cliPath, cfg) },
+	DescribeTable("Assert Put Uses No Timeout When Not Specified",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutUsesNoTimeout(cliPath, cfg) },
 		configurations,
 	)
 	DescribeTable("Assert Put Honors Custom Timeout",
@@ -45,12 +45,20 @@ var _ = Describe("General testing for all Azure regions", func() {
 		func(cfg *config.AZStorageConfig) { integration.AssertPutTimesOut(cliPath, cfg) },
 		configurations,
 	)
-	DescribeTable("Assert Invalid Timeout Falls Back",
-		func(cfg *config.AZStorageConfig) { integration.AssertInvalidTimeoutFallsBack(cliPath, cfg) },
+	DescribeTable("Assert Invalid Timeout Error",
+		func(cfg *config.AZStorageConfig) { integration.AssertInvalidTimeoutIsError(cliPath, cfg) },
 		configurations,
 	)
 	DescribeTable("Assert Signed URL Timeouts",
 		func(cfg *config.AZStorageConfig) { integration.AssertSignedURLTimeouts(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Rejects zero timeout",
+		func(cfg *config.AZStorageConfig) { integration.AssertZeroTimeoutIsError(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Rejects negative timeout",
+		func(cfg *config.AZStorageConfig) { integration.AssertNegativeTimeoutIsError(cliPath, cfg) },
 		configurations,
 	)
 	DescribeTable("Assert Ensure Bucket Idempotent",

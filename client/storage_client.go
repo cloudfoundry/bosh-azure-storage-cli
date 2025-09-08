@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -90,29 +91,36 @@ func (dsc DefaultStorageClient) Upload(
 ) ([]byte, error) {
 	blobURL := fmt.Sprintf("%s/%s", dsc.serviceURL, dest)
 
-	var timeout time.Duration
-	if dsc.storageConfig.Timeout == "" {
-		timeout = 41 * time.Second
-	} else {
-		var err error
-		timeout, err = time.ParseDuration(dsc.storageConfig.Timeout)
-		if err != nil {
-			log.Printf("Invalid timeout format \"%s\", need \"<seconds in number>s\" e.g. 30s, using default of 41s", dsc.storageConfig.Timeout)
-			timeout = 41 * time.Second
-		}
-	}
+	var ctx context.Context
+	var cancel context.CancelFunc
 
-	log.Println(fmt.Sprintf("Uploading %s with a timeout of %s", blobURL, timeout)) //nolint:staticcheck
+	if dsc.storageConfig.Timeout != "" {
+		timeoutInt, err := strconv.Atoi(dsc.storageConfig.Timeout)
+		timeout := time.Duration(timeoutInt) * time.Second
+		if timeout < 1 && err == nil {
+			log.Printf("Invalid time \"%s\", need at least 1 second", dsc.storageConfig.Timeout)
+			return nil, fmt.Errorf("invalid time: %w", err)
+		}
+		if err != nil {
+			log.Printf("Invalid timeout format \"%s\", need \"<seconds in number>\" e.g. 30", dsc.storageConfig.Timeout)
+			return nil, fmt.Errorf("invalid timeout format: %w", err)
+		}
+		log.Println(fmt.Sprintf("Uploading %s with a timeout of %s", blobURL, timeout)) //nolint:staticcheck
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+	} else {
+		log.Println(fmt.Sprintf("Uploading %s with no timeout", blobURL)) //nolint:staticcheck
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	defer cancel()
+
 	client, err := blockblob.NewClientWithSharedKeyCredential(blobURL, dsc.credential, nil)
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 	uploadResponse, err := client.Upload(ctx, source, nil)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("upload failed: timeout of %s reached while uploading %s", timeout, dest)
+		if dsc.storageConfig.Timeout != "" && errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("upload failed: timeout of %s reached while uploading %s", dsc.storageConfig.Timeout, dest)
 		}
 		return nil, fmt.Errorf("upload failure: %w", err)
 	}

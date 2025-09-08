@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/gomega" //nolint:staticcheck
 )
 
-func AssertPutUsesDefaultTimeout(cliPath string, cfg *config.AZStorageConfig) {
+func AssertPutUsesNoTimeout(cliPath string, cfg *config.AZStorageConfig) {
 	cfg2 := *cfg
-	cfg2.Timeout = "" // triggers default 41s
+	cfg2.Timeout = "" // unset -> no timeout
 	configPath := MakeConfigFile(&cfg2)
 	defer os.Remove(configPath) //nolint:errcheck
 
@@ -22,13 +22,17 @@ func AssertPutUsesDefaultTimeout(cliPath string, cfg *config.AZStorageConfig) {
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(sess.ExitCode()).To(BeZero())
-	// stderr contains log.Println output
-	Expect(string(sess.Err.Contents())).To(ContainSubstring("with a timeout of 41s"))
+	Expect(string(sess.Err.Contents())).To(ContainSubstring("Uploading ")) // stderr has log.Println
+	Expect(string(sess.Err.Contents())).To(ContainSubstring("with no timeout"))
+
+	sess, err = RunCli(cliPath, configPath, "delete", blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).To(BeZero())
 }
 
 func AssertPutHonorsCustomTimeout(cliPath string, cfg *config.AZStorageConfig) {
 	cfg2 := *cfg
-	cfg2.Timeout = "3s"
+	cfg2.Timeout = "3"
 	configPath := MakeConfigFile(&cfg2)
 	defer os.Remove(configPath) //nolint:errcheck
 
@@ -39,25 +43,32 @@ func AssertPutHonorsCustomTimeout(cliPath string, cfg *config.AZStorageConfig) {
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(sess.ExitCode()).To(BeZero())
+	Expect(string(sess.Err.Contents())).To(ContainSubstring("with a timeout of 3s"))
+
+	sess, err = RunCli(cliPath, configPath, "delete", blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).To(BeZero())
 }
 
 func AssertPutTimesOut(cliPath string, cfg *config.AZStorageConfig) {
 	cfg2 := *cfg
-	cfg2.Timeout = "1ns"
+	cfg2.Timeout = "1"
 	configPath := MakeConfigFile(&cfg2)
 	defer os.Remove(configPath) //nolint:errcheck
 
-	content := MakeContentFile("data")
+	const mb = 1024 * 1024
+	big := bytes.Repeat([]byte("x"), 25*mb)
+	content := MakeContentFile(string(big))
 	defer os.Remove(content) //nolint:errcheck
 	blob := GenerateRandomString()
 
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(sess.ExitCode()).ToNot(BeZero())
-	Expect(string(sess.Err.Contents())).To(ContainSubstring("timeout of 1ns reached while uploading"))
+	Expect(string(sess.Err.Contents())).To(ContainSubstring("timeout of 1 reached while uploading"))
 }
 
-func AssertInvalidTimeoutFallsBack(cliPath string, cfg *config.AZStorageConfig) {
+func AssertInvalidTimeoutIsError(cliPath string, cfg *config.AZStorageConfig) {
 	cfg2 := *cfg
 	cfg2.Timeout = "bananas"
 	configPath := MakeConfigFile(&cfg2)
@@ -69,9 +80,42 @@ func AssertInvalidTimeoutFallsBack(cliPath string, cfg *config.AZStorageConfig) 
 
 	sess, err := RunCli(cliPath, configPath, "put", content, blob)
 	Expect(err).ToNot(HaveOccurred())
-	Expect(sess.ExitCode()).To(BeZero())
+	Expect(sess.ExitCode()).ToNot(BeZero())
 	Expect(string(sess.Err.Contents())).To(ContainSubstring(`Invalid timeout format "bananas"`))
-	Expect(string(sess.Err.Contents())).To(ContainSubstring("using default of 41s"))
+}
+
+func AssertZeroTimeoutIsError(cliPath string, cfg *config.AZStorageConfig) {
+	cfg2 := *cfg
+	cfg2.Timeout = "0"
+	configPath := MakeConfigFile(&cfg2)
+	defer os.Remove(configPath) //nolint:errcheck
+
+	content := MakeContentFile("x")
+	defer os.Remove(content) //nolint:errcheck
+	blob := GenerateRandomString()
+
+	sess, err := RunCli(cliPath, configPath, "put", content, blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).ToNot(BeZero())
+
+	Expect(string(sess.Err.Contents())).To(ContainSubstring(`Invalid time "0", need at least 1 second`))
+}
+
+func AssertNegativeTimeoutIsError(cliPath string, cfg *config.AZStorageConfig) {
+	cfg2 := *cfg
+	cfg2.Timeout = "-1"
+	configPath := MakeConfigFile(&cfg2)
+	defer os.Remove(configPath) //nolint:errcheck
+
+	content := MakeContentFile("y")
+	defer os.Remove(content) //nolint:errcheck
+	blob := GenerateRandomString()
+
+	sess, err := RunCli(cliPath, configPath, "put", content, blob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(sess.ExitCode()).ToNot(BeZero())
+
+	Expect(string(sess.Err.Contents())).To(ContainSubstring(`Invalid time "-1", need at least 1 second`))
 }
 
 func AssertSignedURLTimeouts(cliPath string, cfg *config.AZStorageConfig) {
