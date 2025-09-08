@@ -211,7 +211,7 @@ func AssertGetNonexistentFails(cliPath string, cfg *config.AZStorageConfig) {
 
 	cliSession, err := RunCli(cliPath, configPath, "get", "non-existent-file", "/dev/null")
 	Expect(err).ToNot(HaveOccurred())
-	Expect(cliSession.ExitCode()).To(BeZero()) // ToDo Not sure why this is returning 0, before it was something else
+	Expect(cliSession.ExitCode()).ToNot(BeZero())
 }
 
 func AssertDeleteNonexistentWorks(cliPath string, cfg *config.AZStorageConfig) {
