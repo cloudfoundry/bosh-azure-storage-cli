@@ -174,4 +174,45 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Context("list", func() {
+		It("lists blobs in a container", func() {
+			storageClient := clientfakes.FakeStorageClient{}
+			storageClient.ListReturns([]string{"blob1", "blob2"}, nil)
+
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
+			blobs, err := azBlobstore.List("")
+			Expect(blobs).To(Equal([]string{"blob1", "blob2"}))
+			Expect(err).ToNot(HaveOccurred())
+
+			containerName := storageClient.ListArgsForCall(0)
+			Expect(containerName).To(Equal(""))
+		})
+
+		It("lists blobs with a prefix in a container", func() {
+			storageClient := clientfakes.FakeStorageClient{}
+			storageClient.ListReturns([]string{"pre-blob1", "pre-blob2"}, nil)
+
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
+			blobs, err := azBlobstore.List("pre-")
+			Expect(blobs).To(Equal([]string{"pre-blob1", "pre-blob2"}))
+			Expect(err).ToNot(HaveOccurred())
+
+			containerName := storageClient.ListArgsForCall(0)
+			Expect(containerName).To(Equal("pre-"))
+		})
+
+		It("returns an error if listing fails", func() {
+			storageClient := clientfakes.FakeStorageClient{}
+			storageClient.ListReturns(nil, errors.New("boom"))
+
+			azBlobstore, _ := client.New(&storageClient) //nolint:errcheck
+			blobs, err := azBlobstore.List("container")
+			Expect(blobs).To(BeNil())
+			Expect(err).To(HaveOccurred())
+
+			containerName := storageClient.ListArgsForCall(0)
+			Expect(containerName).To(Equal("container"))
+		})
+	})
+
 })
