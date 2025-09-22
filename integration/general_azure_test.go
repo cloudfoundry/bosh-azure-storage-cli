@@ -33,6 +33,42 @@ var _ = Describe("General testing for all Azure regions", func() {
 	configurations := []TableEntry{
 		Entry("with default config", &defaultConfig),
 	}
+	DescribeTable("Assert Put Uses No Timeout When Not Specified",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutUsesNoTimeout(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Put Honors Custom Timeout",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutHonorsCustomTimeout(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Put Times Out",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutTimesOut(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Invalid Timeout Error",
+		func(cfg *config.AZStorageConfig) { integration.AssertInvalidTimeoutIsError(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Signed URL Timeouts",
+		func(cfg *config.AZStorageConfig) { integration.AssertSignedURLTimeouts(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Rejects zero timeout",
+		func(cfg *config.AZStorageConfig) { integration.AssertZeroTimeoutIsError(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Rejects negative timeout",
+		func(cfg *config.AZStorageConfig) { integration.AssertNegativeTimeoutIsError(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Ensure Bucket Idempotent",
+		func(cfg *config.AZStorageConfig) { integration.AssertEnsureBucketIdempotent(cliPath, cfg) },
+		configurations,
+	)
+	DescribeTable("Assert Put Get With Special Names",
+		func(cfg *config.AZStorageConfig) { integration.AssertPutGetWithSpecialNames(cliPath, cfg) },
+		configurations,
+	)
 	DescribeTable("Blobstore lifecycle works",
 		func(cfg *config.AZStorageConfig) { integration.AssertLifecycleWorks(cliPath, cfg) },
 		configurations,
@@ -49,6 +85,16 @@ var _ = Describe("General testing for all Azure regions", func() {
 		func(cfg *config.AZStorageConfig) { integration.AssertOnSignedURLs(cliPath, cfg) },
 		configurations,
 	)
+	DescribeTable("Blobstore list and delete lifecycle works",
+		func(cfg *config.AZStorageConfig) { integration.AssertOnListDeleteLifecyle(cliPath, cfg) },
+		configurations,
+	)
+
+	DescribeTable("Server-side copy works",
+		func(cfg *config.AZStorageConfig) { integration.AssertOnCopy(cliPath, cfg) },
+		configurations,
+	)
+
 	Describe("Invoking `put`", func() {
 		var blobName string
 		var configPath string
