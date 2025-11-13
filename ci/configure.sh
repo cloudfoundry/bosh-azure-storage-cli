@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-fly -t bosh set-pipeline -p "bosh-azure-storage-cli" \
+fly -t "${CONCOURSE_TARGET:-"storage-cli"}" set-pipeline -p "bosh-azure-storage-cli" \
     -c "$(dirname "${0}")/pipeline.yml"
