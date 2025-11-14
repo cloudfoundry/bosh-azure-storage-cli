@@ -15,6 +15,10 @@ jobs:
         with:
           go-version-file: go.mod
       - uses: golangci/golangci-lint-action@v9
+        # TODO: remove once caching bug is fixed https://github.com/golangci/golangci-lint-action/issues/420#issuecomment-3530581599
+        with:
+          skip-cache: true
+        #/TODO
 
   test-unit: # <- name
     strategy:
