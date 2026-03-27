@@ -8,7 +8,7 @@ jobs:
     - in_parallel:
         - get: bosh-azure-storage-cli
           trigger: true
-        - get: azure-storage-cli-docker-image
+        - get: azure-storage-cli-image
           trigger: true
     - task: run-unit-tests
       file: bosh-azure-storage-cli/ci/tasks/run-unit-tests.yml
@@ -20,7 +20,7 @@ jobs:
       trigger: true
       passed:
       - unit-tests
-    - get: azure-storage-cli-docker-image
+    - get: azure-storage-cli-image
       trigger: true
       passed: [unit-tests]
     - put: version-semver
@@ -28,13 +28,13 @@ jobs:
         bump: patch
   - in_parallel:
     - task: build-linux
-      image: azure-storage-cli-docker-image
+      image: azure-storage-cli-image
       file: bosh-azure-storage-cli/ci/tasks/build.yml
       output_mapping: { out: out-linux }
       params:
         GOOS: linux
     - task: build-windows
-      image: azure-storage-cli-docker-image
+      image: azure-storage-cli-image
       file: bosh-azure-storage-cli/ci/tasks/build.yml
       output_mapping: { out: out-windows }
       params:
@@ -51,7 +51,7 @@ jobs:
       tag: version-semver/number
       tag_prefix: v
 
-- name: build-azure-storage-cli-docker-image
+- name: build-azure-storage-cli-image
   plan:
   - get: bosh-azure-storage-cli
     resource: bosh-azure-storage-cli-for-docker-image-creation
@@ -132,9 +132,16 @@ resources:
     secret_access_key: ((bosh_azure_storage_cli_pipeline.password))
 
 - name: bosh-golang-release-image
-  type: docker-image
+  type: registry-image
   source:
     repository: ghcr.io/cloudfoundry/bosh/golang-release
+
+- name: azure-storage-cli-image
+  type: registry-image
+  source:
+    repository: bosh/azure-storage-cli
+    username: ((dockerhub_username))
+    password: ((dockerhub_password))
 
 - name: azure-storage-cli-docker-image
   type: docker-image
