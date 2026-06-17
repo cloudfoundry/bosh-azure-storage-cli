@@ -2,7 +2,8 @@
 jobs:
 - name: unit-tests
   public: true
-  build_logs_to_retain: 100
+  build_log_retention:
+    builds: 100
   serial: true
   plan:
     - in_parallel:
@@ -11,6 +12,7 @@ jobs:
         - get: azure-storage-cli-image
           trigger: true
     - task: run-unit-tests
+      image: azure-storage-cli-image
       file: bosh-azure-storage-cli/ci/tasks/run-unit-tests.yml
 
 - name: publish-and-tag
@@ -58,11 +60,26 @@ jobs:
     trigger: true
   - get: bosh-golang-release-image
     trigger: true
-  - put: azure-storage-cli-docker-image
+  - task: build-image
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: concourse/oci-build-task
+      inputs:
+        - name: bosh-azure-storage-cli
+      outputs:
+        - name: image
+      params:
+        CONTEXT: bosh-azure-storage-cli/ci/docker/boshcpi.azure-storage-cli
+      run:
+        path: build
+  - put: azure-storage-cli-image
+    no_get: true
     params:
-      build: "bosh-azure-storage-cli/ci/docker/boshcpi.azure-storage-cli"
-    get_params:
-      skip_download: true
+      image: image/image.tar
 
 - name: bump-deps
   plan:
@@ -78,6 +95,7 @@ jobs:
       output_mapping:
         output_repo: bumped-bosh-azure-storage-cli
     - task: unit-tests
+      image: azure-storage-cli-image
       file: bosh-azure-storage-cli/ci/tasks/run-unit-tests.yml
       input_mapping:
         bosh-azure-storage-cli: bumped-bosh-azure-storage-cli
@@ -140,13 +158,7 @@ resources:
   type: registry-image
   source:
     repository: bosh/azure-storage-cli
-    username: ((dockerhub_username))
-    password: ((dockerhub_password))
-
-- name: azure-storage-cli-docker-image
-  type: docker-image
-  source:
-    repository: bosh/azure-storage-cli
+    tag: latest
     username: ((dockerhub_username))
     password: ((dockerhub_password))
 
