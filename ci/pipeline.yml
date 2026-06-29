@@ -85,6 +85,7 @@ jobs:
   plan:
     - in_parallel:
         - get: bosh-azure-storage-cli
+        - get: azure-storage-cli-image
         - get: golang-release
         - get: weekly
           trigger: true
